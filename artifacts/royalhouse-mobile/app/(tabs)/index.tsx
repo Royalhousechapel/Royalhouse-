@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import {
@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
-type ScreenName = 'home' | 'sermons' | 'give' | 'events' | 'profile' | 'prayer' | 'ministries' | 'branches';
+type ScreenName = 'home' | 'sermons' | 'give' | 'events' | 'profile' | 'prayer' | 'ministries' | 'branches' | 'admin';
 
 const logo = require('../../assets/images/royalhouse-mark.png');
 const worshipBackground = require('../../assets/images/worship-bg.jpg');
@@ -45,6 +45,36 @@ const ministryData = [
 ];
 
 const givingCategories = ['Tithes', 'Offerings', 'First Fruits', 'Faith Seed', 'Building', 'Missions', 'Welfare', 'Royal Ladies'];
+const BRANCHES_STORAGE_KEY = 'royalhouse-branch-directory';
+
+type AdminRole = 'Super Admin' | 'Headquarters Admin' | 'Regional Admin' | 'Branch Admin' | 'Pastor' | 'Ministry Leader' | 'Finance Team' | 'Media Team' | 'Store Manager';
+type AdminModule = 'Members' | 'Branches' | 'Ministries' | 'Sermons & Media' | 'Events' | 'Finance & Giving' | 'Communication' | 'Digital Store' | 'Users & Roles' | 'Settings' | 'Audit Logs';
+
+const adminRoles: AdminRole[] = ['Super Admin', 'Headquarters Admin', 'Regional Admin', 'Branch Admin', 'Pastor', 'Ministry Leader', 'Finance Team', 'Media Team', 'Store Manager'];
+const moduleIcons: Record<AdminModule, IconName> = {
+  Members: 'people-outline',
+  Branches: 'location-outline',
+  Ministries: 'briefcase-outline',
+  'Sermons & Media': 'play-circle-outline',
+  Events: 'calendar-outline',
+  'Finance & Giving': 'card-outline',
+  Communication: 'chatbubbles-outline',
+  'Digital Store': 'bag-handle-outline',
+  'Users & Roles': 'shield-checkmark-outline',
+  Settings: 'settings-outline',
+  'Audit Logs': 'time-outline',
+};
+const modulePermissions: Record<AdminRole, AdminModule[]> = {
+  'Super Admin': Object.keys(moduleIcons) as AdminModule[],
+  'Headquarters Admin': ['Members', 'Branches', 'Ministries', 'Sermons & Media', 'Events', 'Finance & Giving', 'Communication', 'Digital Store', 'Audit Logs'],
+  'Regional Admin': ['Members', 'Branches', 'Ministries', 'Events', 'Communication', 'Audit Logs'],
+  'Branch Admin': ['Members', 'Branches', 'Ministries', 'Events', 'Communication'],
+  Pastor: ['Members', 'Branches', 'Ministries', 'Sermons & Media', 'Events', 'Communication'],
+  'Ministry Leader': ['Members', 'Ministries', 'Events', 'Communication', 'Sermons & Media'],
+  'Finance Team': ['Finance & Giving', 'Members', 'Audit Logs'],
+  'Media Team': ['Sermons & Media', 'Communication', 'Events'],
+  'Store Manager': ['Digital Store', 'Events', 'Audit Logs'],
+};
 
 type Branch = {
   name: string;
@@ -55,6 +85,7 @@ type Branch = {
   pastor: string;
   coordinates: { latitude: number; longitude: number };
   featured?: boolean;
+  archived?: boolean;
 };
 
 // These are the locations explicitly named in the uploaded Global Branch Directory brief.
@@ -376,12 +407,25 @@ export function BranchesScreen({ close, standalone = false }: { close: () => voi
   const [query, setQuery] = useState('');
   const [country, setCountry] = useState('All');
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [branches, setBranches] = useState<Branch[]>(branchData);
   const countries = ['All', 'United States', 'Ghana', 'Canada'];
-  const filteredBranches = useMemo(() => branchData.filter((branch) => {
+  useEffect(() => {
+    AsyncStorage.getItem(BRANCHES_STORAGE_KEY).then((stored) => {
+      if (!stored) return;
+      try {
+        const saved = JSON.parse(stored) as Branch[];
+        if (Array.isArray(saved)) setBranches(saved);
+      } catch {
+        // Keep the verified seed directory if saved data is unavailable.
+      }
+    });
+  }, []);
+  const activeBranches = branches.filter((branch) => !branch.archived);
+  const filteredBranches = useMemo(() => activeBranches.filter((branch) => {
     const matchesCountry = country === 'All' || branch.country === country;
     const searchText = `${branch.name} ${branch.country} ${branch.region} ${branch.city} ${branch.pastor}`.toLowerCase();
     return matchesCountry && searchText.includes(query.toLowerCase().trim());
-  }), [country, query]);
+  }), [activeBranches, country, query]);
 
   const openDirections = (branch: Branch) => {
     const destination = encodeURIComponent(`${branch.name}, ${branch.address}, ${branch.city}, ${branch.country}`);
@@ -428,12 +472,12 @@ export function BranchesScreen({ close, standalone = false }: { close: () => voi
           <View style={styles.mapLandOne} />
           <View style={styles.mapLandTwo} />
           <Text style={styles.mapLabel}>GLOBAL BRANCH MAP</Text>
-          {branchData.map((branch) => (
+          {activeBranches.map((branch) => (
             <Pressable key={branch.name} onPress={() => setSelectedBranch(branch)} style={[styles.mapPin, mapPosition(branch)]}>
               <View style={[styles.mapPinDot, { backgroundColor: selectedBranch?.name === branch.name ? '#FFFFFF' : colors.accent, borderColor: selectedBranch?.name === branch.name ? colors.accent : colors.primary }]} />
             </Pressable>
           ))}
-          <View style={styles.mapLegend}><View style={[styles.mapPinDot, { backgroundColor: colors.accent }]} /><Text style={styles.mapLegendText}>{branchData.length} listed locations</Text></View>
+          <View style={styles.mapLegend}><View style={[styles.mapPinDot, { backgroundColor: colors.accent }]} /><Text style={styles.mapLegendText}>{activeBranches.length} listed locations</Text></View>
         </View>
 
         {selectedBranch ? (
@@ -468,6 +512,150 @@ export function BranchesScreen({ close, standalone = false }: { close: () => voi
   );
 
   return standalone ? content : <Modal animationType="slide" visible onRequestClose={close}>{content}</Modal>;
+}
+
+export function AdminDashboardScreen({ close, standalone = false }: { close: () => void; standalone?: boolean }) {
+  const colors = useColors();
+  const [role, setRole] = useState<AdminRole>('Super Admin');
+  const [activeModule, setActiveModule] = useState<AdminModule | 'Overview'>('Overview');
+  const [branches, setBranches] = useState<Branch[]>(branchData);
+  const [showRolePicker, setShowRolePicker] = useState(false);
+  const [showBranchForm, setShowBranchForm] = useState(false);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [branchForm, setBranchForm] = useState({ name: '', country: 'United States', region: '', city: '', address: '' });
+
+  useEffect(() => {
+    AsyncStorage.getItem(BRANCHES_STORAGE_KEY).then((stored) => {
+      if (!stored) return;
+      try {
+        const saved = JSON.parse(stored) as Branch[];
+        if (Array.isArray(saved)) setBranches(saved);
+      } catch {
+        // Keep the verified seed directory if saved data is unavailable.
+      }
+    });
+  }, []);
+
+  const permittedModules = modulePermissions[role];
+  const activeBranches = branches.filter((branch) => !branch.archived);
+  const saveBranches = async (nextBranches: Branch[]) => {
+    setBranches(nextBranches);
+    await AsyncStorage.setItem(BRANCHES_STORAGE_KEY, JSON.stringify(nextBranches));
+  };
+  const openAddBranch = () => {
+    setEditingBranch(null);
+    setBranchForm({ name: '', country: 'United States', region: '', city: '', address: '' });
+    setShowBranchForm(true);
+  };
+  const openEditBranch = (branch: Branch) => {
+    setEditingBranch(branch);
+    setBranchForm({ name: branch.name, country: branch.country, region: branch.region, city: branch.city, address: branch.address });
+    setShowBranchForm(true);
+  };
+  const saveBranch = async () => {
+    if (!branchForm.name.trim() || !branchForm.city.trim()) {
+      Alert.alert('Missing branch details', 'Add a branch name and city before saving.');
+      return;
+    }
+    const coordinateDefaults: Record<string, { latitude: number; longitude: number }> = {
+      'United States': { latitude: 39, longitude: -96 },
+      Ghana: { latitude: 7.9, longitude: -1.2 },
+      Canada: { latitude: 56, longitude: -106 },
+    };
+    const nextBranch: Branch = {
+      ...(editingBranch ?? { coordinates: coordinateDefaults[branchForm.country] ?? { latitude: 0, longitude: 0 } }),
+      name: branchForm.name.trim(),
+      country: branchForm.country,
+      region: branchForm.region.trim() || 'Region to be assigned',
+      city: branchForm.city.trim(),
+      address: branchForm.address.trim() || 'Branch address to be published',
+      pastor: editingBranch?.pastor ?? 'Branch leadership profile coming soon',
+      archived: false,
+    };
+    const nextBranches = editingBranch
+      ? branches.map((branch) => branch.name === editingBranch.name ? nextBranch : branch)
+      : [...branches, nextBranch];
+    await saveBranches(nextBranches);
+    setShowBranchForm(false);
+    setActiveModule('Branches');
+    Alert.alert(editingBranch ? 'Branch updated' : 'Branch added', `${nextBranch.name} is now available in the global directory.`);
+  };
+  const archiveBranch = (branch: Branch) => {
+    Alert.alert('Archive branch?', `${branch.name} will be hidden from the public directory.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Archive', style: 'destructive', onPress: () => saveBranches(branches.map((item) => item.name === branch.name ? { ...item, archived: true } : item)) },
+    ]);
+  };
+
+  const workspaceCopy: Record<AdminModule, { title: string; body: string; primary: string; secondary: string }> = {
+    Members: { title: 'Member management', body: 'Search member profiles, assign branches and ministries, and keep membership history together.', primary: 'Add member', secondary: 'Export members' },
+    Branches: { title: 'Branch management', body: 'Keep every local assembly current from one place. Changes sync to the member branch directory.', primary: 'Add branch', secondary: 'View archived' },
+    Ministries: { title: 'Ministry management', body: 'Assign leaders, coordinate ministry events, share resources, and follow participation.', primary: 'Create ministry', secondary: 'View reports' },
+    'Sermons & Media': { title: 'Sermons & media', body: 'Organize video, audio, sermon notes, speakers, categories, and publishing schedules.', primary: 'Upload sermon', secondary: 'Open media library' },
+    Events: { title: 'Event management', body: 'Create gatherings, manage registrations, track attendees, and send reminders.', primary: 'Create event', secondary: 'View registrations' },
+    'Finance & Giving': { title: 'Finance & giving', body: 'Review dollar giving summaries, designated funds, receipts, campaigns, and finance reports.', primary: 'View transactions', secondary: 'Export report' },
+    Communication: { title: 'Communication center', body: 'Prepare announcements for branches, ministries, events, and member audiences.', primary: 'Create announcement', secondary: 'Message history' },
+    'Digital Store': { title: 'Digital store', body: 'Manage books, authors, products, inventory, pricing, orders, and customer resources.', primary: 'Add product', secondary: 'View orders' },
+    'Users & Roles': { title: 'Users & roles', body: 'Assign role-based access and review who can manage each part of the ministry platform.', primary: 'Create user', secondary: 'Permission matrix' },
+    Settings: { title: 'System settings', body: 'Manage church information, branding, app settings, notifications, integrations, and security.', primary: 'Open settings', secondary: 'Security review' },
+    'Audit Logs': { title: 'Audit logs', body: 'Review administrative activity with the user, action, timestamp, and change history.', primary: 'View full log', secondary: 'Export audit log' },
+  };
+  const copy = activeModule === 'Overview' ? null : workspaceCopy[activeModule];
+  const actionFeedback = (label: string) => {
+    if (activeModule === 'Branches' && label === 'Add branch') {
+      openAddBranch();
+      return;
+    }
+    Alert.alert(label, `${label} is ready for the ${role} workspace.`);
+  };
+  const dashboardContent = (
+    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.scrollContent, { paddingTop: 24 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <View style={styles.adminHeader}>
+        <View style={styles.adminHeaderCopy}><Text style={[styles.eyebrow, { color: colors.accent }]}>ROYALHOUSE CMS</Text><Text style={[styles.adminTitle, { color: colors.foreground }]}>Command center</Text><Text style={[styles.adminSubtitle, { color: colors.mutedForeground }]}>Manage the digital kingdom with clarity.</Text></View>
+        <Pressable onPress={close} style={styles.adminClose}><Ionicons name="close" size={20} color={colors.foreground} /></Pressable>
+      </View>
+      <Pressable onPress={() => setShowRolePicker(!showRolePicker)} style={[styles.roleSelector, { backgroundColor: colors.primary }]}>
+        <View style={styles.roleSelectorIcon}><Ionicons name="shield-checkmark" size={17} color={colors.accent} /></View>
+        <View style={styles.roleSelectorCopy}><Text style={styles.roleSelectorLabel}>VIEWING AS</Text><Text style={styles.roleSelectorValue}>{role}</Text></View>
+        <Ionicons name={showRolePicker ? 'chevron-up' : 'chevron-down'} size={17} color="#FFFFFF" />
+      </Pressable>
+      {showRolePicker ? <View style={[styles.roleMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>{adminRoles.map((item) => <Pressable key={item} onPress={() => { setRole(item); setShowRolePicker(false); setActiveModule('Overview'); }} style={[styles.roleOption, { borderBottomColor: colors.border }]}><Text style={[styles.roleOptionText, { color: item === role ? colors.accent : colors.foreground }]}>{item}</Text>{item === role ? <Ionicons name="checkmark" size={17} color={colors.accent} /> : null}</Pressable>)}</View> : null}
+
+      <View style={styles.adminStatsGrid}>
+        <AdminStat label="Members" value="1,240" trend="+12.4%" icon="people-outline" />
+        <AdminStat label="Branches" value={String(activeBranches.length)} trend="+2 this year" icon="location-outline" />
+        <AdminStat label="Countries" value="03" trend="Worldwide" icon="globe-outline" />
+        <AdminStat label="Giving this month" value="$12.8k" trend="+8.6%" icon="trending-up-outline" />
+      </View>
+
+      <SectionHeader title={activeModule === 'Overview' ? 'Workspace modules' : copy?.title ?? ''} action={activeModule !== 'Overview' ? 'Overview' : undefined} onPress={() => setActiveModule('Overview')} />
+      {activeModule === 'Overview' ? (
+        <>
+          <View style={styles.moduleGrid}>{permittedModules.map((module) => <Pressable key={module} onPress={() => setActiveModule(module)} style={({ pressed }) => [styles.moduleCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}><View style={[styles.moduleIcon, { backgroundColor: '#F8F1D7' }]}><Ionicons name={moduleIcons[module]} size={20} color={colors.accent} /></View><Text style={[styles.moduleName, { color: colors.foreground }]}>{module}</Text><Ionicons name="arrow-forward" size={14} color={colors.mutedForeground} /></Pressable>)}</View>
+          <SectionHeader title="Recent activity" action="View audit log" onPress={() => permittedModules.includes('Audit Logs') ? setActiveModule('Audit Logs') : Alert.alert('Permission required', 'Your current role cannot view audit logs.')} />
+          <View style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.border }]}><AdminActivity icon="location-outline" title="Branch directory updated" detail="International Headquarters profile reviewed" time="12 min ago" /><AdminActivity icon="heart-outline" title="New giving received" detail="$250 · Building project" time="1 hr ago" /><AdminActivity icon="calendar-outline" title="Event registration opened" detail="Global Worship Service" time="3 hrs ago" /><AdminActivity icon="person-add-outline" title="New member registration" detail="Victory Center · United States" time="Yesterday" /></View>
+        </>
+      ) : (
+        <>
+          <View style={[styles.workspaceIntro, { backgroundColor: colors.card, borderColor: colors.border }]}><Text style={[styles.workspaceBody, { color: colors.mutedForeground }]}>{copy?.body}</Text><View style={styles.workspaceActions}><ActionButton label={copy?.primary ?? 'Open'} icon="add-circle-outline" variant="gold" onPress={() => actionFeedback(copy?.primary ?? 'Open')} /><ActionButton label={copy?.secondary ?? 'View'} icon="arrow-forward-outline" variant="outline" onPress={() => actionFeedback(copy?.secondary ?? 'View')} /></View></View>
+          {activeModule === 'Branches' ? <View style={styles.adminBranchList}>{activeBranches.map((branch) => <View key={branch.name} style={[styles.adminBranchRow, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={[styles.branchListIcon, { backgroundColor: colors.primary }]}><Image source={logo} style={styles.branchListLogo} resizeMode="contain" /></View><View style={styles.branchListCopy}><Text style={[styles.branchListName, { color: colors.foreground }]}>{branch.name}</Text><Text style={[styles.branchListMeta, { color: colors.mutedForeground }]}>{branch.city}, {branch.country}</Text></View><Pressable onPress={() => openEditBranch(branch)} hitSlop={12}><Ionicons name="create-outline" size={19} color={colors.accent} /></Pressable><Pressable onPress={() => archiveBranch(branch)} hitSlop={12}><Ionicons name="archive-outline" size={19} color={colors.destructive} /></Pressable></View>)}</View> : <View style={[styles.moduleEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}><Ionicons name={moduleIcons[activeModule]} size={28} color={colors.accent} /><Text style={[styles.moduleEmptyTitle, { color: colors.foreground }]}>Ready for {role}</Text><Text style={[styles.moduleEmptyBody, { color: colors.mutedForeground }]}>Use the actions above to begin managing this module.</Text></View>}
+        </>
+      )}
+      <View style={styles.bottomSpacer} />
+    </ScrollView>
+  );
+  const branchFormModal = <Modal animationType="slide" transparent visible={showBranchForm} onRequestClose={() => setShowBranchForm(false)}><View style={styles.formBackdrop}><View style={[styles.formSheet, { backgroundColor: colors.card }]}><View style={styles.formHeader}><View><Text style={[styles.eyebrow, { color: colors.accent }]}>BRANCH MANAGEMENT</Text><Text style={[styles.formTitle, { color: colors.foreground }]}>{editingBranch ? 'Edit branch' : 'Add branch'}</Text></View><Pressable onPress={() => setShowBranchForm(false)} hitSlop={12}><Ionicons name="close" size={22} color={colors.foreground} /></Pressable></View>{(['name', 'city', 'region', 'address'] as const).map((field) => <View key={field}><Text style={[styles.formLabel, { color: colors.foreground }]}>{field === 'name' ? 'Branch name' : field.charAt(0).toUpperCase() + field.slice(1)}</Text><TextInput value={branchForm[field]} onChangeText={(value) => setBranchForm((current) => ({ ...current, [field]: value }))} placeholder={field === 'name' ? 'e.g. Royalhouse Chapel Virginia' : `Enter ${field}`} placeholderTextColor={colors.mutedForeground} style={[styles.formInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]} /></View>)}<Text style={[styles.formLabel, { color: colors.foreground }]}>Country</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.formCountryRow}>{['United States', 'Ghana', 'Canada'].map((item) => <Pressable key={item} onPress={() => setBranchForm((current) => ({ ...current, country: item }))} style={[styles.formCountry, { backgroundColor: branchForm.country === item ? colors.accent : colors.background, borderColor: branchForm.country === item ? colors.accent : colors.border }]}><Text style={[styles.formCountryText, { color: branchForm.country === item ? '#FFFFFF' : colors.foreground }]}>{item}</Text></Pressable>)}</ScrollView><ActionButton label={editingBranch ? 'Save branch changes' : 'Add branch to directory'} icon="checkmark-circle-outline" variant="gold" full onPress={saveBranch} /></View></View></Modal>;
+  return standalone ? <>{dashboardContent}{branchFormModal}</> : <Modal animationType="slide" visible onRequestClose={close}><>{dashboardContent}{branchFormModal}</></Modal>;
+}
+
+function AdminStat({ label, value, trend, icon }: { label: string; value: string; trend: string; icon: IconName }) {
+  const colors = useColors();
+  return <View style={[styles.adminStat, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={styles.adminStatTop}><Ionicons name={icon} size={17} color={colors.accent} /><Text style={[styles.adminStatTrend, { color: colors.accent }]}>{trend}</Text></View><Text style={[styles.adminStatValue, { color: colors.foreground }]}>{value}</Text><Text style={[styles.adminStatLabel, { color: colors.mutedForeground }]}>{label}</Text></View>;
+}
+
+function AdminActivity({ icon, title, detail, time }: { icon: IconName; title: string; detail: string; time: string }) {
+  const colors = useColors();
+  return <View style={[styles.activityRow, { borderBottomColor: colors.border }]}><View style={[styles.activityIcon, { backgroundColor: '#F8F1D7' }]}><Ionicons name={icon} size={16} color={colors.accent} /></View><View style={styles.activityCopy}><Text style={[styles.activityTitle, { color: colors.foreground }]}>{title}</Text><Text style={[styles.activityDetail, { color: colors.mutedForeground }]}>{detail}</Text></View><Text style={[styles.activityTime, { color: colors.mutedForeground }]}>{time}</Text></View>;
 }
 
 function EventRow({ event, onPress, registered = false }: { event: typeof eventData[number]; onPress: () => void; registered?: boolean }) {
@@ -510,7 +698,7 @@ function MinistriesScreen({ close }: { close: () => void }) {
 
 export function ProfileScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
   const colors = useColors();
-  return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent}><View style={[styles.profileHero, { backgroundColor: colors.primary }]}><View style={[styles.profileAvatar, { backgroundColor: colors.accent }]}><Text style={styles.profileAvatarText}>C</Text></View><Text style={styles.profileName}>Clement Bolarinwa</Text><Text style={styles.profileBranch}>Royalhouse Victory Center · Member</Text><View style={styles.memberBadge}><Ionicons name="shield-checkmark" size={14} color={colors.accent} /><Text style={[styles.memberBadgeText, { color: colors.accent }]}>MEMBER SINCE 2024</Text></View></View><SectionHeader title="Your kingdom journey" /><View style={styles.profileGrid}><ProfileStat value="12" label="Saved sermons" icon="bookmark-outline" /><ProfileStat value="04" label="Events joined" icon="calendar-outline" /><ProfileStat value="08" label="Prayer updates" icon="heart-outline" /><ProfileStat value="$450" label="This year giving" icon="gift-outline" /></View><SectionHeader title="Quick access" /><ProfileMenu label="Digital member ID" detail="Your membership card" icon="card-outline" onPress={() => Alert.alert('Digital member ID', 'Your member ID will be available here once your profile is verified.')} /><ProfileMenu label="Giving history" detail="View gifts and receipts" icon="receipt-outline" onPress={() => navigate('give')} /><ProfileMenu label="Saved resources" detail="Sermons and library items" icon="library-outline" onPress={() => navigate('sermons')} /><ProfileMenu label="Find a branch" detail="Explore the global directory" icon="location-outline" onPress={() => navigate('branches')} /><ProfileMenu label="Notification settings" detail="Stay connected to the house" icon="notifications-outline" onPress={() => Alert.alert('Notifications', 'Notification preferences are ready to configure.')} /><View style={styles.bottomSpacer} /></ScrollView>;
+  return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent}><View style={[styles.profileHero, { backgroundColor: colors.primary }]}><View style={[styles.profileAvatar, { backgroundColor: colors.accent }]}><Text style={styles.profileAvatarText}>C</Text></View><Text style={styles.profileName}>Clement Bolarinwa</Text><Text style={styles.profileBranch}>Royalhouse Victory Center · Member</Text><View style={styles.memberBadge}><Ionicons name="shield-checkmark" size={14} color={colors.accent} /><Text style={[styles.memberBadgeText, { color: colors.accent }]}>MEMBER SINCE 2024</Text></View></View><SectionHeader title="Your kingdom journey" /><View style={styles.profileGrid}><ProfileStat value="12" label="Saved sermons" icon="bookmark-outline" /><ProfileStat value="04" label="Events joined" icon="calendar-outline" /><ProfileStat value="08" label="Prayer updates" icon="heart-outline" /><ProfileStat value="$450" label="This year giving" icon="gift-outline" /></View><SectionHeader title="Quick access" /><ProfileMenu label="Digital member ID" detail="Your membership card" icon="card-outline" onPress={() => Alert.alert('Digital member ID', 'Your member ID will be available here once your profile is verified.')} /><ProfileMenu label="Giving history" detail="View gifts and receipts" icon="receipt-outline" onPress={() => navigate('give')} /><ProfileMenu label="Saved resources" detail="Sermons and library items" icon="library-outline" onPress={() => navigate('sermons')} /><ProfileMenu label="Find a branch" detail="Explore the global directory" icon="location-outline" onPress={() => navigate('branches')} /><ProfileMenu label="Admin Dashboard" detail="Manage the Royalhouse ecosystem" icon="speedometer-outline" onPress={() => navigate('admin')} /><ProfileMenu label="Notification settings" detail="Stay connected to the house" icon="notifications-outline" onPress={() => Alert.alert('Notifications', 'Notification preferences are ready to configure.')} /><View style={styles.bottomSpacer} /></ScrollView>;
 }
 
 function ProfileStat({ value, label, icon }: { value: string; label: string; icon: IconName }) {
@@ -539,6 +727,7 @@ export default function HomeTab() {
   if (screen === 'prayer') return <PrayerScreen close={() => setScreen('home')} />;
   if (screen === 'ministries') return <MinistriesScreen close={() => setScreen('home')} />;
   if (screen === 'branches') return <BranchesScreen close={() => setScreen('home')} />;
+  if (screen === 'admin') return <AdminDashboardScreen close={() => setScreen('home')} />;
   if (screen === 'sermons') return <SermonsScreen navigate={navigate} />;
   if (screen === 'give') return <GiveScreen />;
   if (screen === 'events') return <EventsScreen />;
@@ -693,6 +882,54 @@ const styles = StyleSheet.create({
   branchListAddress: { fontSize: 10, marginTop: 3 },
   directoryNote: { marginHorizontal: 16, marginTop: 9, padding: 13, borderRadius: 11, flexDirection: 'row', gap: 9, alignItems: 'flex-start' },
   directoryNoteText: { flex: 1, fontSize: 11, lineHeight: 16 },
+  adminHeader: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 16, flexDirection: 'row', alignItems: 'flex-start' },
+  adminHeaderCopy: { flex: 1 },
+  adminTitle: { fontSize: 28, lineHeight: 34, fontWeight: '700', marginTop: 6 },
+  adminSubtitle: { fontSize: 12, marginTop: 5 },
+  adminClose: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#EDEFF5', alignItems: 'center', justifyContent: 'center' },
+  roleSelector: { marginHorizontal: 16, padding: 12, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  roleSelectorIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  roleSelectorCopy: { flex: 1 },
+  roleSelectorLabel: { color: '#D9C56D', fontSize: 9, fontWeight: '800', letterSpacing: 1.3 },
+  roleSelectorValue: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', marginTop: 2 },
+  roleMenu: { marginHorizontal: 16, marginTop: 7, borderRadius: 13, borderWidth: 1, overflow: 'hidden' },
+  roleOption: { minHeight: 42, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
+  roleOptionText: { fontSize: 12, fontWeight: '600' },
+  adminStatsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 8, marginTop: 16 },
+  adminStat: { width: '48%', minHeight: 104, padding: 12, borderWidth: 1, borderRadius: 13 },
+  adminStatTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  adminStatTrend: { fontSize: 9, fontWeight: '700' },
+  adminStatValue: { fontSize: 22, fontWeight: '700', marginTop: 15 },
+  adminStatLabel: { fontSize: 10, marginTop: 3 },
+  moduleGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 8 },
+  moduleCard: { width: '48%', minHeight: 106, padding: 12, borderWidth: 1, borderRadius: 13, justifyContent: 'space-between' },
+  moduleIcon: { width: 35, height: 35, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  moduleName: { fontSize: 12, lineHeight: 16, fontWeight: '700', marginTop: 8, flex: 1 },
+  activityCard: { marginHorizontal: 16, paddingHorizontal: 12, borderWidth: 1, borderRadius: 14 },
+  activityRow: { minHeight: 65, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 9, borderBottomWidth: 1 },
+  activityRowLast: { borderBottomWidth: 0 },
+  activityIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  activityCopy: { flex: 1 },
+  activityTitle: { fontSize: 12, fontWeight: '700' },
+  activityDetail: { fontSize: 10, marginTop: 3 },
+  activityTime: { fontSize: 9 },
+  workspaceIntro: { marginHorizontal: 16, padding: 15, borderWidth: 1, borderRadius: 14 },
+  workspaceBody: { fontSize: 12, lineHeight: 18 },
+  workspaceActions: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  adminBranchList: { marginTop: 14 },
+  adminBranchRow: { marginHorizontal: 16, marginBottom: 9, padding: 10, borderWidth: 1, borderRadius: 13, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  moduleEmpty: { marginHorizontal: 16, marginTop: 14, minHeight: 170, borderWidth: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  moduleEmptyTitle: { fontSize: 15, fontWeight: '700', marginTop: 10 },
+  moduleEmptyBody: { fontSize: 11, textAlign: 'center', marginTop: 5 },
+  formBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(10,18,42,0.42)' },
+  formSheet: { paddingTop: 20, paddingBottom: 28, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '90%' },
+  formHeader: { paddingHorizontal: 20, paddingBottom: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  formTitle: { fontSize: 24, lineHeight: 30, fontWeight: '700', marginTop: 5 },
+  formLabel: { marginHorizontal: 20, fontSize: 12, fontWeight: '700', marginTop: 10, marginBottom: 6 },
+  formInput: { marginHorizontal: 20, minHeight: 43, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, fontSize: 13 },
+  formCountryRow: { paddingHorizontal: 20, gap: 7, paddingBottom: 14 },
+  formCountry: { paddingVertical: 9, paddingHorizontal: 11, borderWidth: 1, borderRadius: 9 },
+  formCountryText: { fontSize: 11, fontWeight: '600' },
   closeButton: { position: 'absolute', right: 20, top: 20, width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EDEFF5', zIndex: 2 },
   prayerIcon: { width: 72, height: 72, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginHorizontal: 20, marginBottom: 4 },
   prayerInput: { marginHorizontal: 16, minHeight: 150, borderWidth: 1, borderRadius: 13, padding: 14, fontSize: 14, lineHeight: 21 },

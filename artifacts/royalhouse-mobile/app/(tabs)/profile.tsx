@@ -8,6 +8,7 @@ export default function ProfileTab() {
     if (screen === 'give') router.push('/(tabs)/give');
     if (screen === 'sermons') router.push('/(tabs)/sermons');
     if (screen === 'branches') router.push('/(tabs)/branches');
+    if (screen === 'admin') router.push('/(tabs)/admin');
     if (screen === 'home') router.push('/(tabs)');
   }} />;
 }

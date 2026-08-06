@@ -116,6 +116,10 @@ function ClassicTabLayout() {
         name="branches"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="admin"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
