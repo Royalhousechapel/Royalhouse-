@@ -1,0 +1,313 @@
+CHANGE OF PROJECT DIRECTION — BUILD MOBILE-FIRST ECOSYSTEM
+
+After reviewing the project vision, I have decided to change the development strategy.
+
+The primary focus should now be the Royalhouse Chapel Worldwide Mobile Application, while still building the backend and architecture to support the official website and future expansion.
+
+The goal is not to build an app and website separately.
+
+The goal is to build one digital ecosystem with one backend powering everything.
+
+⸻
+
+DEVELOPMENT PRIORITY
+
+Phase 1 (Highest Priority)
+
+Build the complete backend infrastructure first.
+
+This includes:
+
+* Database
+* Authentication
+* APIs
+* Admin Dashboard
+* User Roles & Permissions
+* Branch Management
+* Member Management
+* Finance System
+* Giving Platform
+* Sermon Management
+* Event Management
+* Notifications
+* Media Management
+* Digital Store
+* Analytics
+
+Everything should be built with scalability and maintainability in mind.
+
+⸻
+
+Phase 2
+
+Build the official Royalhouse Chapel Worldwide Mobile App.
+
+This should be the primary product that members use every day.
+
+The app must feel premium, modern, fast, and intuitive.
+
+⸻
+
+Mobile App Features
+
+Home
+
+* Welcome screen
+* Daily inspiration
+* Featured sermon
+* Upcoming events
+* Church announcements
+* Quick action buttons
+
+⸻
+
+Watch Live
+
+* Live services
+* Previous broadcasts
+* Live chat (future-ready)
+* Prayer request
+* Share livestream
+
+⸻
+
+Sermons
+
+* Video sermons
+* Audio sermons
+* Sermon notes
+* Bible references
+* Download resources
+* Search by speaker, topic, scripture, or date
+* Favorites
+
+⸻
+
+Giving
+
+Support:
+
+* Tithes
+* Offerings
+* First Fruits
+* Faith Seed
+* Building Donations
+* Welfare
+* Children’s Ministry
+* Men Makers Ministry
+* Royal Ladies
+* WMG Camp
+* SHEvolve
+* Missions
+* Community Outreach
+* Custom campaigns
+
+Features:
+
+* One-time giving
+* Recurring giving
+* Giving history
+* Digital receipts
+
+⸻
+
+Events
+
+* Conferences
+* Camps
+* Retreats
+* Workshops
+* Registration
+* Digital tickets
+* Calendar integration
+* Event reminders
+
+⸻
+
+Prayer Center
+
+* Submit prayer requests
+* Private prayer requests
+* Praise reports
+* Testimony submission
+
+⸻
+
+Member Portal
+
+Members should be able to:
+
+* View profile
+* Update information
+* View digital membership ID
+* View ministry involvement
+* Register for events
+* Access giving history
+* Download receipts
+* Access purchased resources
+
+⸻
+
+Ministries
+
+Create dedicated pages for:
+
+* Children’s Ministry
+* Men Makers Ministry
+* Royal Ladies
+* World Movers Generation (WMG)
+* SHEvolve
+* Worship Ministry
+* Prayer Ministry
+* Evangelism
+* Missions
+* Hospitality
+* Protocol
+* Media
+* Ushering
+* Choir
+* Counseling
+* Young Adults
+* Singles
+* Couples & Marriage
+* Community Outreach
+
+Each ministry should have:
+
+* Description
+* Leadership
+* Events
+* Gallery
+* Resources
+* Registration
+* Announcements
+
+⸻
+
+Digital Library
+
+Members can:
+
+* Purchase e-books
+* Download purchased resources
+* Read online (future-ready)
+* Browse books by author or category
+
+⸻
+
+Notifications
+
+Support:
+
+* Announcements
+* Event reminders
+* Giving confirmations
+* Sermon notifications
+* Prayer updates
+* Birthday greetings
+* Ministry announcements
+
+⸻
+
+ADMIN DASHBOARD
+
+Develop a comprehensive administration portal for Headquarters and authorized branch leaders.
+
+Modules should include:
+
+* Dashboard
+* Member Management
+* Branch Management
+* Leadership Management
+* Ministry Management
+* Giving Management
+* Events
+* Sermons
+* Media Library
+* Digital Store
+* Communication Center
+* Reports
+* Analytics
+* User Roles & Permissions
+* System Settings
+
+⸻
+
+WEBSITE
+
+The website is still part of the project, but it should use the exact same backend as the mobile app.
+
+Purpose of the website:
+
+* Public information
+* Search engine visibility
+* Livestream access
+* Sermons
+* Events
+* Online giving
+* Digital store
+* Contact information
+* Visitor engagement
+* Administration portal
+
+All content should synchronize automatically with the mobile app.
+
+⸻
+
+ARCHITECTURE
+
+Use one centralized backend.
+
+One database.
+
+One authentication system.
+
+One API layer.
+
+One content management system.
+
+Everything should synchronize across:
+
+* Website
+* iOS App
+* Android App
+* Admin Dashboard
+
+Users should use one account across all platforms.
+
+⸻
+
+CODE QUALITY
+
+Use a clean, modular architecture.
+
+Organize the codebase into reusable components and services.
+
+Write maintainable code with clear naming conventions.
+
+Document major modules and APIs.
+
+⸻
+
+TESTING
+
+Before considering the project complete:
+
+* Test every screen.
+* Test every button.
+* Test every form.
+* Test every API.
+* Test every payment workflow.
+* Test every user role.
+* Test mobile responsiveness where applicable.
+* Test synchronization between the app, website, and admin dashboard.
+
+Resolve all critical and major issues before release.
+
+⸻
+
+FINAL OBJECTIVE
+
+Create a premium, production-ready Royalhouse Chapel Worldwide digital ecosystem with a mobile-first experience, powered by a unified backend that also supports the official website and future expansion.
+
+The platform should be scalable, secure, reliable, and designed to serve the ministry for many years while accommodating future growth and additional modules.

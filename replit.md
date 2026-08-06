@@ -1,6 +1,6 @@
-# [Project name]
+# Royalhouse Chapel Worldwide Digital Kingdom Platform
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A mobile-first member experience for Royalhouse Chapel Worldwide, bringing ministry content, sermons, events, prayer, giving, ministries, and member access into one premium app.
 
 ## Run & Operate
 
@@ -22,15 +22,22 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/royalhouse-mobile` — Expo mobile app and the first member-facing product surface
+- `artifacts/royalhouse-mobile/app/(tabs)/index.tsx` — home, sermons, giving, events, prayer, ministries, and profile flows
+- `artifacts/royalhouse-mobile/constants/colors.ts` — Royalhouse navy/gold design tokens
+- `artifacts/royalhouse-mobile/assets/images` — supplied logo, payment reference, and ministry atmosphere asset
+- `lib/api-spec/openapi.yaml` — shared backend contract for future website/admin/mobile synchronization
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first mobile build is local-first with AsyncStorage for member actions, allowing a complete Expo Go experience before backend modules are connected.
+- Royal blue and royal gold are the primary brand signals, derived from the supplied payment reference and the supplied Victory Center logo.
+- The mobile experience is organized around daily member behavior: listen, give, pray, attend, find a ministry, and manage a member profile.
+- The shared API workspace remains the future synchronization layer for the website, admin portal, and mobile client.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+The Royalhouse Chapel mobile app gives members a welcoming home feed, live-service entry point, sermon library, event calendar, giving flow with one-time and recurring options, prayer center, ministry directory, and digital member profile.
 
 ## User preferences
 
@@ -38,7 +45,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Use the artifact-managed Expo workflow for previews so Expo Go receives the correct host configuration.
+- The first build intentionally uses local persistence for giving and prayer submissions; secure payment processing and server-backed auth are future integration work.
 
 ## Pointers
 
