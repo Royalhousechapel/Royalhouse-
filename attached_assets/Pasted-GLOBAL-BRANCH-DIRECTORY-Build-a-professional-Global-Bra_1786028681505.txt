@@ -1,0 +1,131 @@
+GLOBAL BRANCH DIRECTORY
+
+Build a professional Global Branch Directory for Royalhouse Chapel Worldwide.
+
+Research and populate the directory using official Royalhouse Chapel Worldwide sources.
+
+International Headquarters
+
+* International Headquarters (Ahenfie)
+* Oil Dome
+* Ring Road West
+* Accra, Ghana
+
+⸻
+
+Ghana
+
+Create the branch structure under the official regions:
+
+* Greater Accra Region
+* Ashanti Region
+* Central Region
+* Eastern Region
+* Western Region
+* Volta Region
+* Bono & Bono East Region
+* Northern Region
+
+Research and include all officially listed local assemblies within each region.
+
+⸻
+
+United States
+
+Research and include officially recognized branches, including:
+
+* Royalhouse Chapel Connecticut
+* Royalhouse Chapel Maryland (Grace2Grace Center)
+* Royalhouse Chapel Massachusetts (Mt. Zion Center)
+* Royalhouse Chapel Georgia (Miracle Life Center)
+
+Continue researching and include any additional officially recognized U.S. branches.
+
+⸻
+
+Canada
+
+Research and include officially recognized Canadian branches, including:
+
+* Royalhouse Chapel Toronto
+
+⸻
+
+Europe
+
+Research and include all officially recognized European branches and missions.
+
+⸻
+
+Other International Missions
+
+Continue researching and include every officially recognized Royalhouse Chapel international mission and branch worldwide.
+
+⸻
+
+EACH BRANCH SHOULD HAVE
+
+* Branch Name
+* Branch Logo
+* Branch Banner
+* Branch Pastor
+* Leadership Team
+* Branch History
+* Country
+* Region/State
+* City
+* Address
+* Google Maps
+* Contact Numbers
+* Email
+* WhatsApp
+* Website (if available)
+* Social Media
+* Service Times
+* Weekly Programs
+* Ministries
+* Gallery
+* Live Stream
+* Events
+* Announcements
+* Prayer Request
+* Online Giving
+* Contact Form
+
+⸻
+
+INTERACTIVE WORLD MAP
+
+Display every branch on a searchable world map.
+
+Users should be able to:
+
+* Search by country
+* Search by city
+* Search by branch name
+* Search by pastor
+* Filter by region
+* Find the nearest branch
+* Get directions
+* Contact the branch directly
+
+⸻
+
+ADMIN MANAGEMENT
+
+Headquarters should be able to:
+
+* Add new branches
+* Edit branch information
+* Assign pastors
+* Upload photos and videos
+* Update service times
+* Manage ministries
+* Archive inactive branches
+* View branch statistics
+
+Everything must be managed through the Admin Dashboard.
+
+No branch information should be hardcoded.
+
+The system should support unlimited branches as Royalhouse Chapel Worldwide continues to expand globally.

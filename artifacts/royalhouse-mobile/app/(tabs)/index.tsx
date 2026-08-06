@@ -5,6 +5,7 @@ import {
   Alert,
   Image,
   ImageBackground,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -17,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
-type ScreenName = 'home' | 'sermons' | 'give' | 'events' | 'profile' | 'prayer' | 'ministries';
+type ScreenName = 'home' | 'sermons' | 'give' | 'events' | 'profile' | 'prayer' | 'ministries' | 'branches';
 
 const logo = require('../../assets/images/royalhouse-mark.png');
 const worshipBackground = require('../../assets/images/worship-bg.jpg');
@@ -44,6 +45,77 @@ const ministryData = [
 ];
 
 const givingCategories = ['Tithes', 'Offerings', 'First Fruits', 'Faith Seed', 'Building', 'Missions', 'Welfare', 'Royal Ladies'];
+
+type Branch = {
+  name: string;
+  country: string;
+  region: string;
+  city: string;
+  address: string;
+  pastor: string;
+  coordinates: { latitude: number; longitude: number };
+  featured?: boolean;
+};
+
+// These are the locations explicitly named in the uploaded Global Branch Directory brief.
+// Additional branch profiles should be added through the future Headquarters CMS.
+const branchData: Branch[] = [
+  {
+    name: 'International Headquarters (Ahenfie)',
+    country: 'Ghana',
+    region: 'Greater Accra Region',
+    city: 'Accra',
+    address: 'Oil Dome · Ring Road West · Accra, Ghana',
+    pastor: 'Headquarters leadership',
+    coordinates: { latitude: 5.56, longitude: -0.2 },
+    featured: true,
+  },
+  {
+    name: 'Royalhouse Chapel Connecticut',
+    country: 'United States',
+    region: 'Connecticut',
+    city: 'Connecticut',
+    address: 'Official branch address managed by Headquarters',
+    pastor: 'Branch leadership profile coming soon',
+    coordinates: { latitude: 41.6, longitude: -72.7 },
+  },
+  {
+    name: 'Royalhouse Chapel Maryland',
+    country: 'United States',
+    region: 'Maryland',
+    city: 'Maryland',
+    address: 'Grace2Grace Center',
+    pastor: 'Branch leadership profile coming soon',
+    coordinates: { latitude: 39.05, longitude: -76.64 },
+  },
+  {
+    name: 'Royalhouse Chapel Massachusetts',
+    country: 'United States',
+    region: 'Massachusetts',
+    city: 'Massachusetts',
+    address: 'Mt. Zion Center',
+    pastor: 'Branch leadership profile coming soon',
+    coordinates: { latitude: 42.36, longitude: -71.06 },
+  },
+  {
+    name: 'Royalhouse Chapel Georgia',
+    country: 'United States',
+    region: 'Georgia',
+    city: 'Georgia',
+    address: 'Miracle Life Center',
+    pastor: 'Branch leadership profile coming soon',
+    coordinates: { latitude: 33.75, longitude: -84.39 },
+  },
+  {
+    name: 'Royalhouse Chapel Toronto',
+    country: 'Canada',
+    region: 'Ontario',
+    city: 'Toronto',
+    address: 'Official branch address managed by Headquarters',
+    pastor: 'Branch leadership profile coming soon',
+    coordinates: { latitude: 43.65, longitude: -79.38 },
+  },
+];
 
 function ActionButton({
   label,
@@ -141,7 +213,7 @@ function HomeScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
           <Text style={styles.heroBody}>Join a global family learning to live, love, and lead like Jesus.</Text>
           <View style={styles.heroActions}>
             <ActionButton label="Watch live" icon="play" variant="gold" onPress={() => Alert.alert('Live service', 'The next live service begins Sunday at 9:00 AM WAT.')} />
-            <ActionButton label="Plan a visit" icon="location-outline" variant="ghost" onPress={() => Alert.alert('Find a branch', 'Branch locator is ready for the next phase.')} />
+            <ActionButton label="Plan a visit" icon="location-outline" variant="ghost" onPress={() => navigate('branches')} />
           </View>
         </View>
       </ImageBackground>
@@ -299,6 +371,105 @@ function EventsScreen() {
   );
 }
 
+export function BranchesScreen({ close, standalone = false }: { close: () => void; standalone?: boolean }) {
+  const colors = useColors();
+  const [query, setQuery] = useState('');
+  const [country, setCountry] = useState('All');
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const countries = ['All', 'United States', 'Ghana', 'Canada'];
+  const filteredBranches = useMemo(() => branchData.filter((branch) => {
+    const matchesCountry = country === 'All' || branch.country === country;
+    const searchText = `${branch.name} ${branch.country} ${branch.region} ${branch.city} ${branch.pastor}`.toLowerCase();
+    return matchesCountry && searchText.includes(query.toLowerCase().trim());
+  }), [country, query]);
+
+  const openDirections = (branch: Branch) => {
+    const destination = encodeURIComponent(`${branch.name}, ${branch.address}, ${branch.city}, ${branch.country}`);
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${destination}`).catch(() => {
+      Alert.alert('Directions unavailable', 'Please search for this branch in your preferred maps app.');
+    });
+  };
+
+  const showContactInfo = (branch: Branch) => {
+    Alert.alert('Branch contact', `${branch.name}\n\nContact details are managed by Headquarters and will appear here once published.`);
+  };
+
+  const mapPosition = (branch: Branch) => ({
+    left: `${Math.max(6, Math.min(90, ((branch.coordinates.longitude + 130) / 175) * 100))}%` as `${number}%`,
+    top: `${Math.max(10, Math.min(84, (1 - branch.coordinates.latitude / 62) * 100))}%` as `${number}%`,
+  });
+
+  const content = (
+      <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.scrollContent, { paddingTop: 62 }]} showsVerticalScrollIndicator={false}>
+        <Pressable onPress={close} style={styles.closeButton}><Ionicons name="close" size={23} color={colors.foreground} /></Pressable>
+        <View style={styles.pageHeader}>
+          <Text style={[styles.eyebrow, { color: colors.accent }]}>ROYALHOUSE WORLDWIDE</Text>
+          <Text style={[styles.pageTitle, { color: colors.foreground }]}>Find your branch.</Text>
+          <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>A growing global family, one local assembly at a time.</Text>
+        </View>
+
+        <View style={[styles.searchBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="search" size={19} color={colors.mutedForeground} />
+          <TextInput value={query} onChangeText={setQuery} placeholder="Search branch, city, or pastor" placeholderTextColor={colors.mutedForeground} style={[styles.searchInput, { color: colors.foreground }]} />
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryList}>
+          {countries.map((item) => (
+            <Pressable key={item} onPress={() => setCountry(item)} style={[styles.categoryChip, { backgroundColor: country === item ? colors.accent : colors.card, borderColor: country === item ? colors.accent : colors.border }]}>
+              <Text style={[styles.categoryText, { color: country === item ? '#FFFFFF' : colors.foreground }]}>{item}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        <View style={[styles.mapPanel, { backgroundColor: colors.primary }]}>
+          <View style={styles.mapGridLineHorizontalOne} />
+          <View style={styles.mapGridLineHorizontalTwo} />
+          <View style={styles.mapGridLineVerticalOne} />
+          <View style={styles.mapGridLineVerticalTwo} />
+          <View style={styles.mapLandOne} />
+          <View style={styles.mapLandTwo} />
+          <Text style={styles.mapLabel}>GLOBAL BRANCH MAP</Text>
+          {branchData.map((branch) => (
+            <Pressable key={branch.name} onPress={() => setSelectedBranch(branch)} style={[styles.mapPin, mapPosition(branch)]}>
+              <View style={[styles.mapPinDot, { backgroundColor: selectedBranch?.name === branch.name ? '#FFFFFF' : colors.accent, borderColor: selectedBranch?.name === branch.name ? colors.accent : colors.primary }]} />
+            </Pressable>
+          ))}
+          <View style={styles.mapLegend}><View style={[styles.mapPinDot, { backgroundColor: colors.accent }]} /><Text style={styles.mapLegendText}>{branchData.length} listed locations</Text></View>
+        </View>
+
+        {selectedBranch ? (
+          <View style={[styles.branchDetailCard, { backgroundColor: colors.card, borderColor: colors.accent }]}>
+            <View style={styles.branchDetailHeader}>
+              <View style={[styles.branchLogoSmall, { backgroundColor: colors.primary }]}><Image source={logo} style={styles.branchLogoImage} resizeMode="contain" /></View>
+              <View style={styles.branchDetailTitleCopy}><Text style={[styles.branchDetailName, { color: colors.foreground }]}>{selectedBranch.name}</Text><Text style={[styles.branchDetailRegion, { color: colors.accent }]}>{selectedBranch.city} · {selectedBranch.country}</Text></View>
+              <Pressable onPress={() => setSelectedBranch(null)} hitSlop={12}><Ionicons name="close-circle-outline" size={21} color={colors.mutedForeground} /></Pressable>
+            </View>
+            <View style={[styles.branchInfoLine, { borderTopColor: colors.border }]}><Ionicons name="location-outline" size={17} color={colors.accent} /><Text style={[styles.branchInfoText, { color: colors.foreground }]}>{selectedBranch.address}</Text></View>
+            <View style={styles.branchInfoLine}><Ionicons name="person-outline" size={17} color={colors.accent} /><Text style={[styles.branchInfoText, { color: colors.foreground }]}>{selectedBranch.pastor}</Text></View>
+            <View style={styles.branchActionRow}>
+              <Pressable onPress={() => openDirections(selectedBranch)} style={[styles.branchAction, { backgroundColor: colors.primary }]}><Ionicons name="navigate-outline" size={17} color="#FFFFFF" /><Text style={styles.branchActionText}>Directions</Text></Pressable>
+              <Pressable onPress={() => showContactInfo(selectedBranch)} style={[styles.branchAction, { backgroundColor: '#F8F1D7' }]}><Ionicons name="call-outline" size={17} color={colors.accent} /><Text style={[styles.branchActionText, { color: colors.foreground }]}>Contact</Text></Pressable>
+            </View>
+            <Text style={[styles.pendingLabel, { color: colors.mutedForeground }]}>Service times, ministries, events, livestream, and branch contacts will appear as Headquarters publishes each profile.</Text>
+          </View>
+        ) : null}
+
+        <SectionHeader title={`${filteredBranches.length} listed locations`} action="Clear" onPress={() => { setQuery(''); setCountry('All'); }} />
+        {filteredBranches.map((branch) => (
+          <Pressable key={branch.name} onPress={() => setSelectedBranch(branch)} style={({ pressed }) => [styles.branchListRow, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}>
+            <View style={[styles.branchListIcon, { backgroundColor: colors.primary }]}><Image source={logo} style={styles.branchListLogo} resizeMode="contain" /></View>
+            <View style={styles.branchListCopy}><Text style={[styles.branchListName, { color: colors.foreground }]}>{branch.name}</Text><Text style={[styles.branchListMeta, { color: colors.mutedForeground }]}>{branch.city}, {branch.country}</Text><Text style={[styles.branchListAddress, { color: colors.mutedForeground }]}>{branch.address}</Text></View>
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        ))}
+        {filteredBranches.length === 0 ? <EmptyState icon="location-outline" title="No branches found" body="Try a different country, city, or branch name." /> : null}
+        <View style={[styles.directoryNote, { backgroundColor: '#F8F1D7' }]}><Ionicons name="shield-checkmark-outline" size={19} color={colors.accent} /><Text style={[styles.directoryNoteText, { color: colors.foreground }]}>This directory starts with locations named in the official brief. Headquarters can add and update unlimited branch profiles through the future admin dashboard.</Text></View>
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+  );
+
+  return standalone ? content : <Modal animationType="slide" visible onRequestClose={close}>{content}</Modal>;
+}
+
 function EventRow({ event, onPress, registered = false }: { event: typeof eventData[number]; onPress: () => void; registered?: boolean }) {
   const colors = useColors();
   return <Pressable testID={`event-${event.title}`} onPress={onPress} style={({ pressed }) => [styles.eventRow, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}>
@@ -339,7 +510,7 @@ function MinistriesScreen({ close }: { close: () => void }) {
 
 export function ProfileScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
   const colors = useColors();
-  return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent}><View style={[styles.profileHero, { backgroundColor: colors.primary }]}><View style={[styles.profileAvatar, { backgroundColor: colors.accent }]}><Text style={styles.profileAvatarText}>C</Text></View><Text style={styles.profileName}>Clement Bolarinwa</Text><Text style={styles.profileBranch}>Royalhouse Victory Center · Member</Text><View style={styles.memberBadge}><Ionicons name="shield-checkmark" size={14} color={colors.accent} /><Text style={[styles.memberBadgeText, { color: colors.accent }]}>MEMBER SINCE 2024</Text></View></View><SectionHeader title="Your kingdom journey" /><View style={styles.profileGrid}><ProfileStat value="12" label="Saved sermons" icon="bookmark-outline" /><ProfileStat value="04" label="Events joined" icon="calendar-outline" /><ProfileStat value="08" label="Prayer updates" icon="heart-outline" /><ProfileStat value="$450" label="This year giving" icon="gift-outline" /></View><SectionHeader title="Quick access" /><ProfileMenu label="Digital member ID" detail="Your membership card" icon="card-outline" onPress={() => Alert.alert('Digital member ID', 'Your member ID will be available here once your profile is verified.')} /><ProfileMenu label="Giving history" detail="View gifts and receipts" icon="receipt-outline" onPress={() => navigate('give')} /><ProfileMenu label="Saved resources" detail="Sermons and library items" icon="library-outline" onPress={() => navigate('sermons')} /><ProfileMenu label="Notification settings" detail="Stay connected to the house" icon="notifications-outline" onPress={() => Alert.alert('Notifications', 'Notification preferences are ready to configure.')} /><View style={styles.bottomSpacer} /></ScrollView>;
+  return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent}><View style={[styles.profileHero, { backgroundColor: colors.primary }]}><View style={[styles.profileAvatar, { backgroundColor: colors.accent }]}><Text style={styles.profileAvatarText}>C</Text></View><Text style={styles.profileName}>Clement Bolarinwa</Text><Text style={styles.profileBranch}>Royalhouse Victory Center · Member</Text><View style={styles.memberBadge}><Ionicons name="shield-checkmark" size={14} color={colors.accent} /><Text style={[styles.memberBadgeText, { color: colors.accent }]}>MEMBER SINCE 2024</Text></View></View><SectionHeader title="Your kingdom journey" /><View style={styles.profileGrid}><ProfileStat value="12" label="Saved sermons" icon="bookmark-outline" /><ProfileStat value="04" label="Events joined" icon="calendar-outline" /><ProfileStat value="08" label="Prayer updates" icon="heart-outline" /><ProfileStat value="$450" label="This year giving" icon="gift-outline" /></View><SectionHeader title="Quick access" /><ProfileMenu label="Digital member ID" detail="Your membership card" icon="card-outline" onPress={() => Alert.alert('Digital member ID', 'Your member ID will be available here once your profile is verified.')} /><ProfileMenu label="Giving history" detail="View gifts and receipts" icon="receipt-outline" onPress={() => navigate('give')} /><ProfileMenu label="Saved resources" detail="Sermons and library items" icon="library-outline" onPress={() => navigate('sermons')} /><ProfileMenu label="Find a branch" detail="Explore the global directory" icon="location-outline" onPress={() => navigate('branches')} /><ProfileMenu label="Notification settings" detail="Stay connected to the house" icon="notifications-outline" onPress={() => Alert.alert('Notifications', 'Notification preferences are ready to configure.')} /><View style={styles.bottomSpacer} /></ScrollView>;
 }
 
 function ProfileStat({ value, label, icon }: { value: string; label: string; icon: IconName }) {
@@ -367,6 +538,7 @@ export default function HomeTab() {
   const navigate = (next: ScreenName) => setScreen(next);
   if (screen === 'prayer') return <PrayerScreen close={() => setScreen('home')} />;
   if (screen === 'ministries') return <MinistriesScreen close={() => setScreen('home')} />;
+  if (screen === 'branches') return <BranchesScreen close={() => setScreen('home')} />;
   if (screen === 'sermons') return <SermonsScreen navigate={navigate} />;
   if (screen === 'give') return <GiveScreen />;
   if (screen === 'events') return <EventsScreen />;
@@ -487,6 +659,40 @@ const styles = StyleSheet.create({
   eventDetail: { fontSize: 11, marginTop: 4 },
   eventLocation: { fontSize: 10, marginTop: 5 },
   eventChevron: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  mapPanel: { marginHorizontal: 16, marginTop: 17, height: 202, borderRadius: 17, overflow: 'hidden', position: 'relative' },
+  mapGridLineHorizontalOne: { position: 'absolute', top: 62, left: -10, right: -10, height: 1, backgroundColor: 'rgba(255,255,255,0.08)', transform: [{ rotate: '-4deg' }] },
+  mapGridLineHorizontalTwo: { position: 'absolute', top: 137, left: -10, right: -10, height: 1, backgroundColor: 'rgba(255,255,255,0.08)', transform: [{ rotate: '4deg' }] },
+  mapGridLineVerticalOne: { position: 'absolute', left: 120, top: -10, bottom: -10, width: 1, backgroundColor: 'rgba(255,255,255,0.08)', transform: [{ rotate: '13deg' }] },
+  mapGridLineVerticalTwo: { position: 'absolute', left: 260, top: -10, bottom: -10, width: 1, backgroundColor: 'rgba(255,255,255,0.08)', transform: [{ rotate: '-14deg' }] },
+  mapLandOne: { position: 'absolute', left: 26, top: 57, width: 114, height: 55, borderRadius: 45, backgroundColor: 'rgba(255,255,255,0.06)', transform: [{ rotate: '-22deg' }] },
+  mapLandTwo: { position: 'absolute', right: 29, top: 78, width: 74, height: 65, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.06)', transform: [{ rotate: '24deg' }] },
+  mapLabel: { position: 'absolute', top: 15, left: 17, color: '#D9C56D', fontSize: 9, fontWeight: '800', letterSpacing: 1.5 },
+  mapPin: { position: 'absolute', width: 27, height: 27, alignItems: 'center', justifyContent: 'center' },
+  mapPinDot: { width: 11, height: 11, borderRadius: 6, borderWidth: 2, shadowColor: '#D9C56D', shadowOpacity: 0.7, shadowRadius: 5, elevation: 4 },
+  mapLegend: { position: 'absolute', left: 17, bottom: 14, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  mapLegendText: { color: '#DDE4F3', fontSize: 10 },
+  branchDetailCard: { marginHorizontal: 16, marginTop: 14, borderWidth: 1, borderRadius: 15, padding: 14 },
+  branchDetailHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  branchLogoSmall: { width: 44, height: 44, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  branchLogoImage: { width: 38, height: 38 },
+  branchDetailTitleCopy: { flex: 1 },
+  branchDetailName: { fontSize: 14, lineHeight: 19, fontWeight: '700' },
+  branchDetailRegion: { fontSize: 11, fontWeight: '700', marginTop: 3 },
+  branchInfoLine: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', paddingTop: 11, marginTop: 11, borderTopWidth: 1 },
+  branchInfoText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  branchActionRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  branchAction: { flex: 1, borderRadius: 9, minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  branchActionText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  pendingLabel: { fontSize: 10, lineHeight: 15, marginTop: 12 },
+  branchListRow: { marginHorizontal: 16, marginBottom: 9, borderRadius: 13, borderWidth: 1, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  branchListIcon: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  branchListLogo: { width: 42, height: 42 },
+  branchListCopy: { flex: 1 },
+  branchListName: { fontSize: 13, fontWeight: '700', lineHeight: 17 },
+  branchListMeta: { fontSize: 11, marginTop: 3 },
+  branchListAddress: { fontSize: 10, marginTop: 3 },
+  directoryNote: { marginHorizontal: 16, marginTop: 9, padding: 13, borderRadius: 11, flexDirection: 'row', gap: 9, alignItems: 'flex-start' },
+  directoryNoteText: { flex: 1, fontSize: 11, lineHeight: 16 },
   closeButton: { position: 'absolute', right: 20, top: 20, width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EDEFF5', zIndex: 2 },
   prayerIcon: { width: 72, height: 72, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginHorizontal: 20, marginBottom: 4 },
   prayerInput: { marginHorizontal: 16, minHeight: 150, borderWidth: 1, borderRadius: 13, padding: 14, fontSize: 14, lineHeight: 21 },

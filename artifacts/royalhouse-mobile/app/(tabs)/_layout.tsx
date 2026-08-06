@@ -112,6 +112,10 @@ function ClassicTabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="branches"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

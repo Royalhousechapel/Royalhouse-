@@ -23,7 +23,7 @@ A mobile-first member experience for Royalhouse Chapel Worldwide, bringing minis
 ## Where things live
 
 - `artifacts/royalhouse-mobile` — Expo mobile app and the first member-facing product surface
-- `artifacts/royalhouse-mobile/app/(tabs)/index.tsx` — home, sermons, giving, events, prayer, ministries, and profile flows
+- `artifacts/royalhouse-mobile/app/(tabs)/index.tsx` — home, sermons, giving, events, prayer, ministries, branch directory, and profile flows
 - `artifacts/royalhouse-mobile/constants/colors.ts` — Royalhouse navy/gold design tokens
 - `artifacts/royalhouse-mobile/assets/images` — supplied logo, payment reference, and ministry atmosphere asset
 - `lib/api-spec/openapi.yaml` — shared backend contract for future website/admin/mobile synchronization
@@ -37,7 +37,7 @@ A mobile-first member experience for Royalhouse Chapel Worldwide, bringing minis
 
 ## Product
 
-The Royalhouse Chapel mobile app gives members a welcoming home feed, live-service entry point, sermon library, event calendar, giving flow with one-time and recurring options, prayer center, ministry directory, and digital member profile.
+The Royalhouse Chapel mobile app gives members a welcoming home feed, live-service entry point, sermon library, event calendar, giving flow with one-time and recurring options, prayer center, ministry directory, global branch directory, and digital member profile.
 
 ## User preferences
 
