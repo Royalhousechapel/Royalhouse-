@@ -13,16 +13,31 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { ClerkProvider, ClerkLoaded, useAuth } from '@clerk/expo';
+import { tokenCache } from '@clerk/expo/token-cache';
+import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+const apiDomain = process.env.EXPO_PUBLIC_DOMAIN;
+if (apiDomain) setBaseUrl(`https://${apiDomain}`);
+
+function AuthTokenBridge({ children }: { children: React.ReactNode }) {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+  return <>{children}</>;
+}
 
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: 'Back' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -46,13 +61,22 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
-            <KeyboardProvider>
-              <RootLayoutNav />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
+        <ClerkProvider
+          publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''}
+          tokenCache={tokenCache}
+        >
+          <ClerkLoaded>
+            <AuthTokenBridge>
+              <QueryClientProvider client={queryClient}>
+                <GestureHandlerRootView>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </QueryClientProvider>
+            </AuthTokenBridge>
+          </ClerkLoaded>
+        </ClerkProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );

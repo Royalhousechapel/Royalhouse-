@@ -1,0 +1,1 @@
+- [OpenAPI UUID compatibility](openapi-codegen.md) — keep UUID fields as plain strings when this workspace uses Zod 3; generated `zod.uuid()` is unavailable.

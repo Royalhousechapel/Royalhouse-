@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: branches
+    description: Public branch directory
+  - name: admin
+    description: Protected Headquarters administration
 paths:
   /healthz:
     get:
@@ -24,7 +28,129 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /branches:
+    get:
+      operationId: listBranches
+      tags: [branches]
+      summary: List active branches
+      responses:
+        "200":
+          description: Active branch directory
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Branch"
+  /admin/me:
+    get:
+      operationId: getAdminProfile
+      tags: [admin]
+      summary: Get the signed-in administrator profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Authorized administrator profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProfile"
+        "401":
+          description: Authentication required
+        "403":
+          description: Authenticated account has no active admin assignment
+  /admin/branches:
+    post:
+      operationId: createBranch
+      tags: [admin]
+      summary: Create a branch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchInput"
+      responses:
+        "201":
+          description: Branch created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "400":
+          description: Invalid branch
+        "401":
+          description: Authentication required
+        "403":
+          description: Insufficient permissions
+  /admin/branches/{id}:
+    patch:
+      operationId: updateBranch
+      tags: [admin]
+      summary: Update a branch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchUpdate"
+      responses:
+        "200":
+          description: Branch updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "400":
+          description: Invalid branch
+        "401":
+          description: Authentication required
+        "403":
+          description: Insufficient permissions
+        "404":
+          description: Branch not found
+  /admin/branches/{id}/archive:
+    post:
+      operationId: archiveBranch
+      tags: [admin]
+      summary: Archive a branch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Archived branch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "401":
+          description: Authentication required
+        "403":
+          description: Insufficient permissions
+        "404":
+          description: Branch not found
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +159,57 @@ components:
           type: string
       required:
         - status
+    Branch:
+      type: object
+      required: [id, name, country, region, city, address, pastor, latitude, longitude, featured, archived]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        country: { type: string }
+        region: { type: string }
+        city: { type: string }
+        address: { type: string }
+        pastor: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        featured: { type: boolean }
+        archived: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    BranchInput:
+      type: object
+      required: [name, country, region, city, address, pastor, latitude, longitude]
+      properties:
+        name: { type: string, minLength: 1 }
+        country: { type: string, minLength: 1 }
+        region: { type: string, minLength: 1 }
+        city: { type: string, minLength: 1 }
+        address: { type: string, minLength: 1 }
+        pastor: { type: string, minLength: 1 }
+        latitude: { type: number }
+        longitude: { type: number }
+        featured: { type: boolean }
+    BranchUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        country: { type: string, minLength: 1 }
+        region: { type: string, minLength: 1 }
+        city: { type: string, minLength: 1 }
+        address: { type: string, minLength: 1 }
+        pastor: { type: string, minLength: 1 }
+        latitude: { type: number }
+        longitude: { type: number }
+        featured: { type: boolean }
+        archived: { type: boolean }
+    AdminProfile:
+      type: object
+      required: [clerkUserId, role, modules]
+      properties:
+        clerkUserId: { type: string }
+        role: { type: string }
+        branchId: { type: ["string", "null"] }
+        modules:
+          type: array
+          items: { type: string }
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   Alert,
@@ -16,6 +17,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
+import { useAuth } from '@clerk/expo';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  getListBranchesQueryKey,
+  getGetAdminProfileQueryKey,
+  useArchiveBranch,
+  useCreateBranch,
+  useGetAdminProfile,
+  useListBranches,
+  useUpdateBranch,
+} from '@workspace/api-client-react';
+import type { Branch as ApiBranch } from '@workspace/api-client-react';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 type ScreenName = 'home' | 'sermons' | 'give' | 'events' | 'profile' | 'prayer' | 'ministries' | 'branches' | 'admin';
@@ -45,8 +58,6 @@ const ministryData = [
 ];
 
 const givingCategories = ['Tithes', 'Offerings', 'First Fruits', 'Faith Seed', 'Building', 'Missions', 'Welfare', 'Royal Ladies'];
-const BRANCHES_STORAGE_KEY = 'royalhouse-branch-directory';
-
 type AdminRole = 'Super Admin' | 'Headquarters Admin' | 'Regional Admin' | 'Branch Admin' | 'Pastor' | 'Ministry Leader' | 'Finance Team' | 'Media Team' | 'Store Manager';
 type AdminModule = 'Members' | 'Branches' | 'Ministries' | 'Sermons & Media' | 'Events' | 'Finance & Giving' | 'Communication' | 'Digital Store' | 'Users & Roles' | 'Settings' | 'Audit Logs';
 
@@ -77,6 +88,7 @@ const modulePermissions: Record<AdminRole, AdminModule[]> = {
 };
 
 type Branch = {
+  id?: string;
   name: string;
   country: string;
   region: string;
@@ -87,6 +99,21 @@ type Branch = {
   featured?: boolean;
   archived?: boolean;
 };
+
+function apiBranchToBranch(branch: ApiBranch): Branch {
+  return {
+    id: branch.id,
+    name: branch.name,
+    country: branch.country,
+    region: branch.region,
+    city: branch.city,
+    address: branch.address,
+    pastor: branch.pastor,
+    coordinates: { latitude: branch.latitude, longitude: branch.longitude },
+    featured: branch.featured,
+    archived: branch.archived,
+  };
+}
 
 // These are the locations explicitly named in the uploaded Global Branch Directory brief.
 // Additional branch profiles should be added through the future Headquarters CMS.
@@ -407,19 +434,9 @@ export function BranchesScreen({ close, standalone = false }: { close: () => voi
   const [query, setQuery] = useState('');
   const [country, setCountry] = useState('All');
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
-  const [branches, setBranches] = useState<Branch[]>(branchData);
+  const { data: apiBranches, isLoading: branchesLoading } = useListBranches();
   const countries = ['All', 'United States', 'Ghana', 'Canada'];
-  useEffect(() => {
-    AsyncStorage.getItem(BRANCHES_STORAGE_KEY).then((stored) => {
-      if (!stored) return;
-      try {
-        const saved = JSON.parse(stored) as Branch[];
-        if (Array.isArray(saved)) setBranches(saved);
-      } catch {
-        // Keep the verified seed directory if saved data is unavailable.
-      }
-    });
-  }, []);
+  const branches: Branch[] = apiBranches?.map(apiBranchToBranch) ?? [];
   const activeBranches = branches.filter((branch) => !branch.archived);
   const filteredBranches = useMemo(() => activeBranches.filter((branch) => {
     const matchesCountry = country === 'All' || branch.country === country;
@@ -477,7 +494,7 @@ export function BranchesScreen({ close, standalone = false }: { close: () => voi
               <View style={[styles.mapPinDot, { backgroundColor: selectedBranch?.name === branch.name ? '#FFFFFF' : colors.accent, borderColor: selectedBranch?.name === branch.name ? colors.accent : colors.primary }]} />
             </Pressable>
           ))}
-          <View style={styles.mapLegend}><View style={[styles.mapPinDot, { backgroundColor: colors.accent }]} /><Text style={styles.mapLegendText}>{activeBranches.length} listed locations</Text></View>
+          <View style={styles.mapLegend}><View style={[styles.mapPinDot, { backgroundColor: colors.accent }]} /><Text style={styles.mapLegendText}>{branchesLoading ? 'Loading locations…' : `${activeBranches.length} listed locations`}</Text></View>
         </View>
 
         {selectedBranch ? (
@@ -516,32 +533,23 @@ export function BranchesScreen({ close, standalone = false }: { close: () => voi
 
 export function AdminDashboardScreen({ close, standalone = false }: { close: () => void; standalone?: boolean }) {
   const colors = useColors();
-  const [role, setRole] = useState<AdminRole>('Super Admin');
+  const router = useRouter();
+  const { isSignedIn } = useAuth();
+  const queryClient = useQueryClient();
+  const adminProfile = useGetAdminProfile({ query: { queryKey: getGetAdminProfileQueryKey(), enabled: Boolean(isSignedIn), retry: false } });
+  const branchQuery = useListBranches();
+  const createBranchMutation = useCreateBranch();
+  const updateBranchMutation = useUpdateBranch();
+  const archiveBranchMutation = useArchiveBranch();
+  const role = adminProfile.data?.role as AdminRole | undefined;
   const [activeModule, setActiveModule] = useState<AdminModule | 'Overview'>('Overview');
-  const [branches, setBranches] = useState<Branch[]>(branchData);
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [showBranchForm, setShowBranchForm] = useState(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const [branchForm, setBranchForm] = useState({ name: '', country: 'United States', region: '', city: '', address: '' });
-
-  useEffect(() => {
-    AsyncStorage.getItem(BRANCHES_STORAGE_KEY).then((stored) => {
-      if (!stored) return;
-      try {
-        const saved = JSON.parse(stored) as Branch[];
-        if (Array.isArray(saved)) setBranches(saved);
-      } catch {
-        // Keep the verified seed directory if saved data is unavailable.
-      }
-    });
-  }, []);
-
-  const permittedModules = modulePermissions[role];
+  const branches = branchQuery.data?.map(apiBranchToBranch) ?? [];
+  const permittedModules = role ? modulePermissions[role] : [];
   const activeBranches = branches.filter((branch) => !branch.archived);
-  const saveBranches = async (nextBranches: Branch[]) => {
-    setBranches(nextBranches);
-    await AsyncStorage.setItem(BRANCHES_STORAGE_KEY, JSON.stringify(nextBranches));
-  };
   const openAddBranch = () => {
     setEditingBranch(null);
     setBranchForm({ name: '', country: 'United States', region: '', city: '', address: '' });
@@ -562,28 +570,43 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
       Ghana: { latitude: 7.9, longitude: -1.2 },
       Canada: { latitude: 56, longitude: -106 },
     };
-    const nextBranch: Branch = {
-      ...(editingBranch ?? { coordinates: coordinateDefaults[branchForm.country] ?? { latitude: 0, longitude: 0 } }),
+    const payload = {
       name: branchForm.name.trim(),
       country: branchForm.country,
       region: branchForm.region.trim() || 'Region to be assigned',
       city: branchForm.city.trim(),
       address: branchForm.address.trim() || 'Branch address to be published',
       pastor: editingBranch?.pastor ?? 'Branch leadership profile coming soon',
-      archived: false,
+      latitude: editingBranch?.coordinates.latitude ?? coordinateDefaults[branchForm.country].latitude,
+      longitude: editingBranch?.coordinates.longitude ?? coordinateDefaults[branchForm.country].longitude,
+      featured: editingBranch?.featured ?? false,
     };
-    const nextBranches = editingBranch
-      ? branches.map((branch) => branch.name === editingBranch.name ? nextBranch : branch)
-      : [...branches, nextBranch];
-    await saveBranches(nextBranches);
-    setShowBranchForm(false);
-    setActiveModule('Branches');
-    Alert.alert(editingBranch ? 'Branch updated' : 'Branch added', `${nextBranch.name} is now available in the global directory.`);
+    try {
+      if (editingBranch?.id) {
+        await updateBranchMutation.mutateAsync({ id: editingBranch.id, data: payload });
+      } else {
+        await createBranchMutation.mutateAsync({ data: payload });
+      }
+      await queryClient.invalidateQueries({ queryKey: getListBranchesQueryKey() });
+      setShowBranchForm(false);
+      setActiveModule('Branches');
+      Alert.alert(editingBranch ? 'Branch updated' : 'Branch added', `${payload.name} is now available in the global directory.`);
+    } catch (error) {
+      Alert.alert('Could not save branch', error instanceof Error ? error.message : 'Please try again.');
+    }
   };
   const archiveBranch = (branch: Branch) => {
+    if (!branch.id) return;
     Alert.alert('Archive branch?', `${branch.name} will be hidden from the public directory.`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Archive', style: 'destructive', onPress: () => saveBranches(branches.map((item) => item.name === branch.name ? { ...item, archived: true } : item)) },
+      { text: 'Archive', style: 'destructive', onPress: async () => {
+        try {
+          await archiveBranchMutation.mutateAsync({ id: branch.id! });
+          await queryClient.invalidateQueries({ queryKey: getListBranchesQueryKey() });
+        } catch (error) {
+          Alert.alert('Could not archive branch', error instanceof Error ? error.message : 'Please try again.');
+        }
+      } },
     ]);
   };
 
@@ -606,20 +629,28 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
       openAddBranch();
       return;
     }
-    Alert.alert(label, `${label} is ready for the ${role} workspace.`);
+    Alert.alert(label, `${label} is ready for the ${role ?? 'administrator'} workspace.`);
   };
+  if (!isSignedIn) {
+    return <View style={[styles.accessState, { backgroundColor: colors.background }]}><View style={[styles.accessIcon, { backgroundColor: colors.primary }]}><Ionicons name="lock-closed" size={27} color={colors.accent} /></View><Text style={[styles.accessTitle, { color: colors.foreground }]}>Admin sign-in required</Text><Text style={[styles.accessBody, { color: colors.mutedForeground }]}>Sign in with your Royalhouse account before opening the administration workspace.</Text><ActionButton label="Sign in" icon="log-in-outline" variant="gold" onPress={() => router.replace('/sign-in' as never)} /><ActionButton label="Close" variant="ghost" onPress={close} /></View>;
+  }
+  if (adminProfile.isLoading) {
+    return <View style={[styles.accessState, { backgroundColor: colors.background }]}><Ionicons name="shield-checkmark-outline" size={35} color={colors.accent} /><Text style={[styles.accessTitle, { color: colors.foreground }]}>Checking admin access…</Text><Text style={[styles.accessBody, { color: colors.mutedForeground }]}>Verifying your active Royalhouse assignment.</Text></View>;
+  }
+  if (adminProfile.isError || !role) {
+    return <View style={[styles.accessState, { backgroundColor: colors.background }]}><View style={[styles.accessIcon, { backgroundColor: '#F8F1D7' }]}><Ionicons name="shield-outline" size={27} color={colors.accent} /></View><Text style={[styles.accessTitle, { color: colors.foreground }]}>Admin access not assigned</Text><Text style={[styles.accessBody, { color: colors.mutedForeground }]}>Your account is signed in, but Headquarters has not assigned an active administration role yet.</Text><ActionButton label="Close" variant="gold" onPress={close} /></View>;
+  }
   const dashboardContent = (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.scrollContent, { paddingTop: 24 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       <View style={styles.adminHeader}>
         <View style={styles.adminHeaderCopy}><Text style={[styles.eyebrow, { color: colors.accent }]}>ROYALHOUSE CMS</Text><Text style={[styles.adminTitle, { color: colors.foreground }]}>Command center</Text><Text style={[styles.adminSubtitle, { color: colors.mutedForeground }]}>Manage the digital kingdom with clarity.</Text></View>
         <Pressable onPress={close} style={styles.adminClose}><Ionicons name="close" size={20} color={colors.foreground} /></Pressable>
       </View>
-      <Pressable onPress={() => setShowRolePicker(!showRolePicker)} style={[styles.roleSelector, { backgroundColor: colors.primary }]}>
+      <View style={[styles.roleSelector, { backgroundColor: colors.primary }]}>
         <View style={styles.roleSelectorIcon}><Ionicons name="shield-checkmark" size={17} color={colors.accent} /></View>
         <View style={styles.roleSelectorCopy}><Text style={styles.roleSelectorLabel}>VIEWING AS</Text><Text style={styles.roleSelectorValue}>{role}</Text></View>
-        <Ionicons name={showRolePicker ? 'chevron-up' : 'chevron-down'} size={17} color="#FFFFFF" />
-      </Pressable>
-      {showRolePicker ? <View style={[styles.roleMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>{adminRoles.map((item) => <Pressable key={item} onPress={() => { setRole(item); setShowRolePicker(false); setActiveModule('Overview'); }} style={[styles.roleOption, { borderBottomColor: colors.border }]}><Text style={[styles.roleOptionText, { color: item === role ? colors.accent : colors.foreground }]}>{item}</Text>{item === role ? <Ionicons name="checkmark" size={17} color={colors.accent} /> : null}</Pressable>)}</View> : null}
+        <Ionicons name="checkmark-circle" size={18} color={colors.accent} />
+      </View>
 
       <View style={styles.adminStatsGrid}>
         <AdminStat label="Members" value="1,240" trend="+12.4%" icon="people-outline" />
@@ -884,6 +915,10 @@ const styles = StyleSheet.create({
   directoryNoteText: { flex: 1, fontSize: 11, lineHeight: 16 },
   adminHeader: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 16, flexDirection: 'row', alignItems: 'flex-start' },
   adminHeaderCopy: { flex: 1 },
+  accessState: { flex: 1, minHeight: 520, padding: 28, alignItems: 'center', justifyContent: 'center' },
+  accessIcon: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  accessTitle: { fontSize: 22, lineHeight: 28, fontWeight: '700', textAlign: 'center', marginTop: 12 },
+  accessBody: { maxWidth: 320, fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 9, marginBottom: 20 },
   adminTitle: { fontSize: 28, lineHeight: 34, fontWeight: '700', marginTop: 6 },
   adminSubtitle: { fontSize: 12, marginTop: 5 },
   adminClose: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#EDEFF5', alignItems: 'center', justifyContent: 'center' },
