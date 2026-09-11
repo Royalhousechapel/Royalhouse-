@@ -158,3 +158,287 @@ export const ArchiveBranchResponse = zod.object({
 })
 
 
+/**
+ * @summary List active Connect Team workflow options
+ */
+export const ListConnectWorkflowOptionsResponseItem = zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "category": zod.string(),
+  "active": zod.boolean(),
+  "triggerConfig": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListConnectWorkflowOptionsResponse = zod.array(ListConnectWorkflowOptionsResponseItem)
+
+
+/**
+ * @summary Search people in the Connect Team scope
+ */
+export const ListConnectPeopleQueryParams = zod.object({
+  "search": zod.coerce.string().optional()
+})
+
+export const ListConnectPeopleResponseItem = zod.object({
+  "id": zod.string(),
+  "branchId": zod.string().nullish(),
+  "personType": zod.string(),
+  "fullName": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "visitorId": zod.string().nullish(),
+  "memberId": zod.string().nullish(),
+  "visitorStatus": zod.string(),
+  "membershipStatus": zod.string(),
+  "firstVisitAt": zod.coerce.date().nullish(),
+  "lastVisitAt": zod.coerce.date().nullish(),
+  "foundationSchoolStatus": zod.string(),
+  "notes": zod.string().nullish(),
+  "prayerNeeds": zod.string().nullish(),
+  "pastoralFollowUp": zod.boolean(),
+  "tags": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListConnectPeopleResponse = zod.array(ListConnectPeopleResponseItem)
+
+
+/**
+ * @summary Create a visitor or member person record
+ */
+
+
+
+export const CreateConnectPersonBody = zod.object({
+  "branchId": zod.string().nullish(),
+  "personType": zod.string().optional(),
+  "fullName": zod.string().min(1),
+  "phone": zod.string().optional(),
+  "email": zod.string().optional(),
+  "visitorId": zod.string().optional(),
+  "memberId": zod.string().optional(),
+  "visitorStatus": zod.string().optional(),
+  "membershipStatus": zod.string().optional(),
+  "firstVisitAt": zod.coerce.date().optional(),
+  "lastVisitAt": zod.coerce.date().optional(),
+  "foundationSchoolStatus": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "prayerNeeds": zod.string().optional(),
+  "pastoralFollowUp": zod.boolean().optional(),
+  "tags": zod.array(zod.string()).optional()
+})
+
+export const CreateConnectPersonResponse = zod.object({
+  "id": zod.string(),
+  "branchId": zod.string().nullish(),
+  "personType": zod.string(),
+  "fullName": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "visitorId": zod.string().nullish(),
+  "memberId": zod.string().nullish(),
+  "visitorStatus": zod.string(),
+  "membershipStatus": zod.string(),
+  "firstVisitAt": zod.coerce.date().nullish(),
+  "lastVisitAt": zod.coerce.date().nullish(),
+  "foundationSchoolStatus": zod.string(),
+  "notes": zod.string().nullish(),
+  "prayerNeeds": zod.string().nullish(),
+  "pastoralFollowUp": zod.boolean(),
+  "tags": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get Connect Team workload summary
+ */
+export const GetConnectSummaryResponse = zod.object({
+  "peopleCount": zod.number(),
+  "assignedCount": zod.number(),
+  "unassignedCount": zod.number(),
+  "callsToday": zod.number(),
+  "pendingFollowUps": zod.number(),
+  "overdueFollowUps": zod.number(),
+  "pastoralAttentionCount": zod.number()
+})
+
+
+/**
+ * @summary Get a person profile and interaction history
+ */
+export const GetConnectPersonProfileParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetConnectPersonProfileResponse = zod.object({
+  "person": zod.object({
+  "id": zod.string(),
+  "branchId": zod.string().nullish(),
+  "personType": zod.string(),
+  "fullName": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "visitorId": zod.string().nullish(),
+  "memberId": zod.string().nullish(),
+  "visitorStatus": zod.string(),
+  "membershipStatus": zod.string(),
+  "firstVisitAt": zod.coerce.date().nullish(),
+  "lastVisitAt": zod.coerce.date().nullish(),
+  "foundationSchoolStatus": zod.string(),
+  "notes": zod.string().nullish(),
+  "prayerNeeds": zod.string().nullish(),
+  "pastoralFollowUp": zod.boolean(),
+  "tags": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "assignments": zod.array(zod.object({
+  "id": zod.string(),
+  "personId": zod.string(),
+  "assignedClerkUserId": zod.string(),
+  "assignedByClerkUserId": zod.string(),
+  "status": zod.string(),
+  "dueAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "interactions": zod.array(zod.object({
+  "id": zod.string(),
+  "personId": zod.string(),
+  "actorClerkUserId": zod.string(),
+  "interactionType": zod.string(),
+  "outcomeCode": zod.string(),
+  "situationCodes": zod.array(zod.string()),
+  "prayerNeeded": zod.boolean(),
+  "pastoralAttention": zod.boolean(),
+  "visitationRequested": zod.boolean(),
+  "foundationSchoolInterest": zod.boolean(),
+  "notes": zod.string().nullish(),
+  "nextFollowUpAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})),
+  "followUps": zod.array(zod.object({
+  "id": zod.string(),
+  "personId": zod.string(),
+  "interactionId": zod.string().nullish(),
+  "assignedClerkUserId": zod.string().nullish(),
+  "followUpType": zod.string(),
+  "status": zod.string(),
+  "dueAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Assign a person to a Connect Team member
+ */
+export const AssignConnectPersonParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+export const AssignConnectPersonBody = zod.object({
+  "assignedClerkUserId": zod.string().min(1),
+  "dueAt": zod.coerce.date().optional()
+})
+
+export const AssignConnectPersonResponse = zod.object({
+  "id": zod.string(),
+  "personId": zod.string(),
+  "assignedClerkUserId": zod.string(),
+  "assignedByClerkUserId": zod.string(),
+  "status": zod.string(),
+  "dueAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Log a structured Connect Team interaction
+ */
+export const LogConnectInteractionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+export const LogConnectInteractionBody = zod.object({
+  "interactionType": zod.string().optional(),
+  "outcomeCode": zod.string().min(1),
+  "situationCodes": zod.array(zod.string()).optional(),
+  "prayerNeeded": zod.boolean().optional(),
+  "pastoralAttention": zod.boolean().optional(),
+  "visitationRequested": zod.boolean().optional(),
+  "foundationSchoolInterest": zod.boolean().optional(),
+  "notes": zod.string().optional(),
+  "nextFollowUpAt": zod.coerce.date().optional()
+})
+
+export const LogConnectInteractionResponse = zod.object({
+  "interaction": zod.object({
+  "id": zod.string(),
+  "personId": zod.string(),
+  "actorClerkUserId": zod.string(),
+  "interactionType": zod.string(),
+  "outcomeCode": zod.string(),
+  "situationCodes": zod.array(zod.string()),
+  "prayerNeeded": zod.boolean(),
+  "pastoralAttention": zod.boolean(),
+  "visitationRequested": zod.boolean(),
+  "foundationSchoolInterest": zod.boolean(),
+  "notes": zod.string().nullish(),
+  "nextFollowUpAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+}),
+  "followUps": zod.array(zod.object({
+  "id": zod.string(),
+  "personId": zod.string(),
+  "interactionId": zod.string().nullish(),
+  "assignedClerkUserId": zod.string().nullish(),
+  "followUpType": zod.string(),
+  "status": zod.string(),
+  "dueAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Mark a Connect Team follow-up complete
+ */
+export const CompleteConnectFollowUpParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const CompleteConnectFollowUpResponse = zod.object({
+  "id": zod.string(),
+  "personId": zod.string(),
+  "interactionId": zod.string().nullish(),
+  "assignedClerkUserId": zod.string().nullish(),
+  "followUpType": zod.string(),
+  "status": zod.string(),
+  "dueAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+

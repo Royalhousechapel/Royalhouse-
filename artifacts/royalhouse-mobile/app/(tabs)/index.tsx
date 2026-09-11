@@ -22,13 +22,23 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   getListBranchesQueryKey,
   getGetAdminProfileQueryKey,
+  getListConnectPeopleQueryKey,
+  getGetConnectPersonProfileQueryKey,
+  getGetConnectSummaryQueryKey,
   useArchiveBranch,
   useCreateBranch,
+  useCreateConnectPerson,
+  useCompleteConnectFollowUp,
   useGetAdminProfile,
+  useGetConnectPersonProfile,
+  useGetConnectSummary,
+  useListConnectPeople,
+  useListConnectWorkflowOptions,
+  useLogConnectInteraction,
   useListBranches,
   useUpdateBranch,
 } from '@workspace/api-client-react';
-import type { Branch as ApiBranch } from '@workspace/api-client-react';
+import type { Branch as ApiBranch, ConnectPerson, WorkflowOption } from '@workspace/api-client-react';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 type ScreenName = 'home' | 'sermons' | 'give' | 'events' | 'profile' | 'prayer' | 'ministries' | 'branches' | 'admin';
@@ -58,12 +68,13 @@ const ministryData = [
 ];
 
 const givingCategories = ['Tithes', 'Offerings', 'First Fruits', 'Faith Seed', 'Building', 'Missions', 'Welfare', 'Royal Ladies'];
-type AdminRole = 'Super Admin' | 'Headquarters Admin' | 'Regional Admin' | 'Branch Admin' | 'Pastor' | 'Ministry Leader' | 'Finance Team' | 'Media Team' | 'Store Manager';
-type AdminModule = 'Members' | 'Branches' | 'Ministries' | 'Sermons & Media' | 'Events' | 'Finance & Giving' | 'Communication' | 'Digital Store' | 'Users & Roles' | 'Settings' | 'Audit Logs';
+type AdminRole = 'Super Admin' | 'Headquarters Admin' | 'Regional Admin' | 'Branch Admin' | 'Pastor' | 'Ministry Leader' | 'Finance Team' | 'Media Team' | 'Store Manager' | 'Connect Team Leader' | 'Connect Team Member' | 'Pastoral Leadership' | 'Church Administrator';
+type AdminModule = 'Members' | 'Connect Team' | 'Branches' | 'Ministries' | 'Sermons & Media' | 'Events' | 'Finance & Giving' | 'Communication' | 'Digital Store' | 'Users & Roles' | 'Settings' | 'Audit Logs';
 
-const adminRoles: AdminRole[] = ['Super Admin', 'Headquarters Admin', 'Regional Admin', 'Branch Admin', 'Pastor', 'Ministry Leader', 'Finance Team', 'Media Team', 'Store Manager'];
+const adminRoles: AdminRole[] = ['Super Admin', 'Headquarters Admin', 'Regional Admin', 'Branch Admin', 'Pastor', 'Ministry Leader', 'Finance Team', 'Media Team', 'Store Manager', 'Connect Team Leader', 'Connect Team Member', 'Pastoral Leadership', 'Church Administrator'];
 const moduleIcons: Record<AdminModule, IconName> = {
   Members: 'people-outline',
+  'Connect Team': 'call-outline',
   Branches: 'location-outline',
   Ministries: 'briefcase-outline',
   'Sermons & Media': 'play-circle-outline',
@@ -85,6 +96,10 @@ const modulePermissions: Record<AdminRole, AdminModule[]> = {
   'Finance Team': ['Finance & Giving', 'Members', 'Audit Logs'],
   'Media Team': ['Sermons & Media', 'Communication', 'Events'],
   'Store Manager': ['Digital Store', 'Events', 'Audit Logs'],
+  'Connect Team Leader': ['Members', 'Connect Team', 'Communication'],
+  'Connect Team Member': ['Connect Team'],
+  'Pastoral Leadership': ['Members', 'Connect Team', 'Communication', 'Audit Logs'],
+  'Church Administrator': ['Members', 'Connect Team', 'Branches', 'Ministries', 'Events', 'Communication', 'Audit Logs'],
 };
 
 type Branch = {
@@ -542,6 +557,12 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
   const updateBranchMutation = useUpdateBranch();
   const archiveBranchMutation = useArchiveBranch();
   const role = adminProfile.data?.role as AdminRole | undefined;
+  const connectSummary = useGetConnectSummary({
+    query: {
+      queryKey: getGetConnectSummaryQueryKey(),
+      enabled: Boolean(role && modulePermissions[role]?.includes('Connect Team')),
+    },
+  });
   const [activeModule, setActiveModule] = useState<AdminModule | 'Overview'>('Overview');
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [showBranchForm, setShowBranchForm] = useState(false);
@@ -612,6 +633,7 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
 
   const workspaceCopy: Record<AdminModule, { title: string; body: string; primary: string; secondary: string }> = {
     Members: { title: 'Member management', body: 'Search member profiles, assign branches and ministries, and keep membership history together.', primary: 'Add member', secondary: 'Export members' },
+    'Connect Team': { title: 'Connect Team', body: 'Turn every visitor and member touchpoint into a clear next action, with assignment, care flags, and follow-up history.', primary: 'Open Connect Team', secondary: 'View follow-up queue' },
     Branches: { title: 'Branch management', body: 'Keep every local assembly current from one place. Changes sync to the member branch directory.', primary: 'Add branch', secondary: 'View archived' },
     Ministries: { title: 'Ministry management', body: 'Assign leaders, coordinate ministry events, share resources, and follow participation.', primary: 'Create ministry', secondary: 'View reports' },
     'Sermons & Media': { title: 'Sermons & media', body: 'Organize video, audio, sermon notes, speakers, categories, and publishing schedules.', primary: 'Upload sermon', secondary: 'Open media library' },
@@ -653,10 +675,10 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
       </View>
 
       <View style={styles.adminStatsGrid}>
-        <AdminStat label="Members" value="1,240" trend="+12.4%" icon="people-outline" />
+        <AdminStat label="People in Connect" value={connectSummary.data ? String(connectSummary.data.peopleCount) : '—'} trend={connectSummary.data ? `${connectSummary.data.pendingFollowUps} follow-ups` : 'Loading'} icon="people-outline" />
         <AdminStat label="Branches" value={String(activeBranches.length)} trend="+2 this year" icon="location-outline" />
-        <AdminStat label="Countries" value="03" trend="Worldwide" icon="globe-outline" />
-        <AdminStat label="Giving this month" value="$12.8k" trend="+8.6%" icon="trending-up-outline" />
+        <AdminStat label="Countries" value={String(new Set(activeBranches.map((branch) => branch.country)).size).padStart(2, '0')} trend="From directory" icon="globe-outline" />
+        <AdminStat label="Giving this month" value="—" trend="Finance module" icon="trending-up-outline" />
       </View>
 
       <SectionHeader title={activeModule === 'Overview' ? 'Workspace modules' : copy?.title ?? ''} action={activeModule !== 'Overview' ? 'Overview' : undefined} onPress={() => setActiveModule('Overview')} />
@@ -668,8 +690,7 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
         </>
       ) : (
         <>
-          <View style={[styles.workspaceIntro, { backgroundColor: colors.card, borderColor: colors.border }]}><Text style={[styles.workspaceBody, { color: colors.mutedForeground }]}>{copy?.body}</Text><View style={styles.workspaceActions}><ActionButton label={copy?.primary ?? 'Open'} icon="add-circle-outline" variant="gold" onPress={() => actionFeedback(copy?.primary ?? 'Open')} /><ActionButton label={copy?.secondary ?? 'View'} icon="arrow-forward-outline" variant="outline" onPress={() => actionFeedback(copy?.secondary ?? 'View')} /></View></View>
-          {activeModule === 'Branches' ? <View style={styles.adminBranchList}>{activeBranches.map((branch) => <View key={branch.name} style={[styles.adminBranchRow, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={[styles.branchListIcon, { backgroundColor: colors.primary }]}><Image source={logo} style={styles.branchListLogo} resizeMode="contain" /></View><View style={styles.branchListCopy}><Text style={[styles.branchListName, { color: colors.foreground }]}>{branch.name}</Text><Text style={[styles.branchListMeta, { color: colors.mutedForeground }]}>{branch.city}, {branch.country}</Text></View><Pressable onPress={() => openEditBranch(branch)} hitSlop={12}><Ionicons name="create-outline" size={19} color={colors.accent} /></Pressable><Pressable onPress={() => archiveBranch(branch)} hitSlop={12}><Ionicons name="archive-outline" size={19} color={colors.destructive} /></Pressable></View>)}</View> : <View style={[styles.moduleEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}><Ionicons name={moduleIcons[activeModule]} size={28} color={colors.accent} /><Text style={[styles.moduleEmptyTitle, { color: colors.foreground }]}>Ready for {role}</Text><Text style={[styles.moduleEmptyBody, { color: colors.mutedForeground }]}>Use the actions above to begin managing this module.</Text></View>}
+           {activeModule === 'Connect Team' ? <ConnectTeamWorkspace /> : <><View style={[styles.workspaceIntro, { backgroundColor: colors.card, borderColor: colors.border }]}><Text style={[styles.workspaceBody, { color: colors.mutedForeground }]}>{copy?.body}</Text><View style={styles.workspaceActions}><ActionButton label={copy?.primary ?? 'Open'} icon="add-circle-outline" variant="gold" onPress={() => actionFeedback(copy?.primary ?? 'Open')} /><ActionButton label={copy?.secondary ?? 'View'} icon="arrow-forward-outline" variant="outline" onPress={() => actionFeedback(copy?.secondary ?? 'View')} /></View></View>{activeModule === 'Branches' ? <View style={styles.adminBranchList}>{activeBranches.map((branch) => <View key={branch.name} style={[styles.adminBranchRow, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={[styles.branchListIcon, { backgroundColor: colors.primary }]}><Image source={logo} style={styles.branchListLogo} resizeMode="contain" /></View><View style={styles.branchListCopy}><Text style={[styles.branchListName, { color: colors.foreground }]}>{branch.name}</Text><Text style={[styles.branchListMeta, { color: colors.mutedForeground }]}>{branch.city}, {branch.country}</Text></View><Pressable onPress={() => openEditBranch(branch)} hitSlop={12}><Ionicons name="create-outline" size={19} color={colors.accent} /></Pressable><Pressable onPress={() => archiveBranch(branch)} hitSlop={12}><Ionicons name="archive-outline" size={19} color={colors.destructive} /></Pressable></View>)}</View> : <View style={[styles.moduleEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}><Ionicons name={moduleIcons[activeModule]} size={28} color={colors.accent} /><Text style={[styles.moduleEmptyTitle, { color: colors.foreground }]}>Ready for {role}</Text><Text style={[styles.moduleEmptyBody, { color: colors.mutedForeground }]}>Use the actions above to begin managing this module.</Text></View>}</>}
         </>
       )}
       <View style={styles.bottomSpacer} />
@@ -730,6 +751,142 @@ function MinistriesScreen({ close }: { close: () => void }) {
 export function ProfileScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
   const colors = useColors();
   return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent}><View style={[styles.profileHero, { backgroundColor: colors.primary }]}><View style={[styles.profileAvatar, { backgroundColor: colors.accent }]}><Text style={styles.profileAvatarText}>C</Text></View><Text style={styles.profileName}>Clement Bolarinwa</Text><Text style={styles.profileBranch}>Royalhouse Victory Center · Member</Text><View style={styles.memberBadge}><Ionicons name="shield-checkmark" size={14} color={colors.accent} /><Text style={[styles.memberBadgeText, { color: colors.accent }]}>MEMBER SINCE 2024</Text></View></View><SectionHeader title="Your kingdom journey" /><View style={styles.profileGrid}><ProfileStat value="12" label="Saved sermons" icon="bookmark-outline" /><ProfileStat value="04" label="Events joined" icon="calendar-outline" /><ProfileStat value="08" label="Prayer updates" icon="heart-outline" /><ProfileStat value="$450" label="This year giving" icon="gift-outline" /></View><SectionHeader title="Quick access" /><ProfileMenu label="Digital member ID" detail="Your membership card" icon="card-outline" onPress={() => Alert.alert('Digital member ID', 'Your member ID will be available here once your profile is verified.')} /><ProfileMenu label="Giving history" detail="View gifts and receipts" icon="receipt-outline" onPress={() => navigate('give')} /><ProfileMenu label="Saved resources" detail="Sermons and library items" icon="library-outline" onPress={() => navigate('sermons')} /><ProfileMenu label="Find a branch" detail="Explore the global directory" icon="location-outline" onPress={() => navigate('branches')} /><ProfileMenu label="Admin Dashboard" detail="Manage the Royalhouse ecosystem" icon="speedometer-outline" onPress={() => navigate('admin')} /><ProfileMenu label="Notification settings" detail="Stay connected to the house" icon="notifications-outline" onPress={() => Alert.alert('Notifications', 'Notification preferences are ready to configure.')} /><View style={styles.bottomSpacer} /></ScrollView>;
+}
+
+function ConnectTeamWorkspace() {
+  const colors = useColors();
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+  const [showPersonForm, setShowPersonForm] = useState(false);
+  const [showCallForm, setShowCallForm] = useState(false);
+  const [personForm, setPersonForm] = useState({ fullName: '', phone: '', email: '', personType: 'visitor', notes: '' });
+  const [callForm, setCallForm] = useState({
+    outcomeCode: '',
+    situationCodes: [] as string[],
+    notes: '',
+    nextFollowUpAt: '',
+    prayerNeeded: false,
+    pastoralAttention: false,
+    visitationRequested: false,
+    foundationSchoolInterest: false,
+  });
+  const peopleQuery = useListConnectPeople(search.trim() ? { search: search.trim() } : undefined);
+  const summaryQuery = useGetConnectSummary({ query: { queryKey: getGetConnectSummaryQueryKey() } });
+  const optionsQuery = useListConnectWorkflowOptions();
+  const profileQuery = useGetConnectPersonProfile(selectedPersonId ?? '', {
+    query: { queryKey: selectedPersonId ? getGetConnectPersonProfileQueryKey(selectedPersonId) : [], enabled: Boolean(selectedPersonId) },
+  });
+  const createPersonMutation = useCreateConnectPerson();
+  const logInteractionMutation = useLogConnectInteraction();
+  const completeFollowUpMutation = useCompleteConnectFollowUp();
+  const people = peopleQuery.data ?? [];
+  const summary = summaryQuery.data;
+  const options = optionsQuery.data ?? [];
+  const outcomes = options.filter((option) => option.category === 'call_outcome');
+  const situations = options.filter((option) => option.category === 'situation');
+  const selectedPerson = profileQuery.data?.person ?? people.find((person) => person.id === selectedPersonId);
+  const invalidateConnect = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: getListConnectPeopleQueryKey() }),
+      queryClient.invalidateQueries({ queryKey: getGetConnectSummaryQueryKey() }),
+      ...(selectedPersonId ? [queryClient.invalidateQueries({ queryKey: getGetConnectPersonProfileQueryKey(selectedPersonId) })] : []),
+    ]);
+  };
+  const savePerson = async () => {
+    if (!personForm.fullName.trim()) {
+      Alert.alert('Name required', 'Add the person’s name before saving.');
+      return;
+    }
+    try {
+      const created = await createPersonMutation.mutateAsync({
+        data: {
+          fullName: personForm.fullName.trim(),
+          personType: personForm.personType,
+          phone: personForm.phone.trim() || undefined,
+          email: personForm.email.trim() || undefined,
+          notes: personForm.notes.trim() || undefined,
+          tags: [],
+        },
+      });
+      await invalidateConnect();
+      setShowPersonForm(false);
+      setPersonForm({ fullName: '', phone: '', email: '', personType: 'visitor', notes: '' });
+      setSelectedPersonId(created.id);
+      Alert.alert('Person added', 'The record is ready for Connect Team assignment and follow-up.');
+    } catch (error) {
+      Alert.alert('Could not add person', error instanceof Error ? error.message : 'Please try again.');
+    }
+  };
+  const toggleSituation = (code: string) => {
+    setCallForm((current) => ({
+      ...current,
+      situationCodes: current.situationCodes.includes(code)
+        ? current.situationCodes.filter((item) => item !== code)
+        : [...current.situationCodes, code],
+    }));
+  };
+  const logCall = async () => {
+    if (!selectedPersonId || !callForm.outcomeCode) {
+      Alert.alert('Choose an outcome', 'Select what happened on the call before saving.');
+      return;
+    }
+    try {
+      await logInteractionMutation.mutateAsync({
+        id: selectedPersonId,
+        data: {
+          interactionType: 'call',
+          outcomeCode: callForm.outcomeCode,
+          situationCodes: callForm.situationCodes,
+          prayerNeeded: callForm.prayerNeeded,
+          pastoralAttention: callForm.pastoralAttention,
+          visitationRequested: callForm.visitationRequested,
+          foundationSchoolInterest: callForm.foundationSchoolInterest,
+          notes: callForm.notes.trim() || undefined,
+          nextFollowUpAt: callForm.nextFollowUpAt.trim() || undefined,
+        },
+      });
+      await invalidateConnect();
+      setShowCallForm(false);
+      setCallForm({ outcomeCode: '', situationCodes: [], notes: '', nextFollowUpAt: '', prayerNeeded: false, pastoralAttention: false, visitationRequested: false, foundationSchoolInterest: false });
+      Alert.alert('Call logged', 'The interaction and any triggered follow-ups were saved.');
+    } catch (error) {
+      Alert.alert('Could not log call', error instanceof Error ? error.message : 'Please try again.');
+    }
+  };
+  const completeFollowUp = async (followUpId: string) => {
+    try {
+      await completeFollowUpMutation.mutateAsync({ id: followUpId });
+      await invalidateConnect();
+    } catch (error) {
+      Alert.alert('Could not complete follow-up', error instanceof Error ? error.message : 'Please try again.');
+    }
+  };
+  const statItems = [
+    { label: 'People', value: summary?.peopleCount ?? 0, icon: 'people-outline' as IconName },
+    { label: 'Assigned', value: summary?.assignedCount ?? 0, icon: 'person-add-outline' as IconName },
+    { label: 'Follow-ups', value: summary?.pendingFollowUps ?? 0, icon: 'calendar-outline' as IconName },
+    { label: 'Pastoral', value: summary?.pastoralAttentionCount ?? 0, icon: 'heart-outline' as IconName },
+  ];
+  return (
+    <>
+      <View style={[styles.connectIntro, { backgroundColor: colors.primary }]}>
+        <View style={styles.connectIntroCopy}><Text style={styles.roleSelectorLabel}>CONNECT TEAM WORKSPACE</Text><Text style={styles.connectTitle}>People before programs.</Text><Text style={styles.connectSubtitle}>Capture every visitor, call, care need, and next action in one shared record.</Text></View>
+        <View style={styles.connectIntroIcon}><Ionicons name="call-outline" size={23} color={colors.accent} /></View>
+      </View>
+      <View style={styles.connectStatsGrid}>{statItems.map((item) => <View key={item.label} style={[styles.connectStat, { backgroundColor: colors.card, borderColor: colors.border }]}><Ionicons name={item.icon} size={17} color={colors.accent} /><Text style={[styles.connectStatValue, { color: colors.foreground }]}>{item.value}</Text><Text style={[styles.connectStatLabel, { color: colors.mutedForeground }]}>{item.label}</Text></View>)}</View>
+      <View style={[styles.connectToolbar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.connectSearch, { backgroundColor: colors.background, borderColor: colors.border }]}><Ionicons name="search-outline" size={17} color={colors.mutedForeground} /><TextInput value={search} onChangeText={setSearch} placeholder="Search name, phone, email, ID" placeholderTextColor={colors.mutedForeground} style={[styles.connectSearchInput, { color: colors.foreground }]} /></View>
+        <ActionButton label="Add person" icon="person-add-outline" variant="gold" onPress={() => setShowPersonForm(true)} />
+      </View>
+      {peopleQuery.isLoading ? <View style={styles.connectLoading}><Ionicons name="sync-outline" size={22} color={colors.accent} /><Text style={[styles.connectLoadingText, { color: colors.mutedForeground }]}>Loading assigned people…</Text></View> : null}
+      {!peopleQuery.isLoading && people.length === 0 ? <EmptyState icon="people-outline" title="No people in this view" body="Add a visitor or ask a Connect Team leader to assign people to your workload." /> : null}
+      {people.map((person) => <Pressable key={person.id} onPress={() => setSelectedPersonId(person.id)} style={({ pressed }) => [styles.connectPersonRow, { backgroundColor: colors.card, borderColor: selectedPersonId === person.id ? colors.accent : colors.border }, pressed && styles.pressed]}><View style={[styles.connectAvatar, { backgroundColor: colors.primary }]}><Text style={styles.connectAvatarText}>{person.fullName.slice(0, 1).toUpperCase()}</Text></View><View style={styles.connectPersonCopy}><Text style={[styles.connectPersonName, { color: colors.foreground }]}>{person.fullName}</Text><Text style={[styles.connectPersonMeta, { color: colors.mutedForeground }]}>{person.personType} · {person.phone || person.email || 'Contact details pending'}</Text><Text style={[styles.connectPersonMeta, { color: person.pastoralFollowUp ? colors.destructive : colors.mutedForeground }]}>{person.pastoralFollowUp ? 'Pastoral follow-up flagged' : person.membershipStatus === 'member' ? 'Member' : 'Needs connection'}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} /></Pressable>)}
+      {selectedPerson ? <View style={[styles.connectProfileCard, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={styles.connectProfileHeader}><View style={styles.connectPersonCopy}><Text style={[styles.eyebrow, { color: colors.accent }]}>PERSON PROFILE</Text><Text style={[styles.connectProfileName, { color: colors.foreground }]}>{selectedPerson.fullName}</Text><Text style={[styles.connectPersonMeta, { color: colors.mutedForeground }]}>{selectedPerson.phone || selectedPerson.email || 'No contact details yet'}</Text></View><Pressable onPress={() => setSelectedPersonId(null)} hitSlop={12}><Ionicons name="close-circle-outline" size={23} color={colors.mutedForeground} /></Pressable></View><View style={styles.connectActionRow}><ActionButton label="Log call" icon="call-outline" variant="gold" onPress={() => setShowCallForm(true)} /><ActionButton label="Refresh" icon="refresh-outline" variant="outline" onPress={() => profileQuery.refetch()} /></View>{selectedPerson.notes ? <Text style={[styles.connectNotes, { color: colors.mutedForeground }]}>{selectedPerson.notes}</Text> : null}{profileQuery.data?.followUps.filter((item) => item.status === 'pending').map((followUp) => <View key={followUp.id} style={[styles.connectFollowUp, { borderColor: colors.border }]}><View style={styles.connectPersonCopy}><Text style={[styles.connectFollowUpType, { color: colors.foreground }]}>{followUp.followUpType.replaceAll('_', ' ')}</Text><Text style={[styles.connectPersonMeta, { color: colors.mutedForeground }]}>Due {new Date(followUp.dueAt).toLocaleDateString()}</Text></View><Pressable onPress={() => completeFollowUp(followUp.id)} style={[styles.connectCompleteButton, { backgroundColor: '#E7F5EC' }]}><Ionicons name="checkmark" size={16} color="#2B8A4B" /><Text style={styles.connectCompleteText}>Done</Text></Pressable></View>)}{profileQuery.data?.interactions.slice(0, 3).map((interaction) => <View key={interaction.id} style={[styles.connectInteraction, { borderTopColor: colors.border }]}><Text style={[styles.connectFollowUpType, { color: colors.foreground }]}>{interaction.outcomeCode.replaceAll('_', ' ')}</Text><Text style={[styles.connectPersonMeta, { color: colors.mutedForeground }]}>{new Date(interaction.createdAt).toLocaleDateString()} · {interaction.notes || 'No notes recorded'}</Text></View>)}</View> : null}
+      <Modal animationType="slide" transparent visible={showPersonForm} onRequestClose={() => setShowPersonForm(false)}><View style={styles.formBackdrop}><View style={[styles.formSheet, { backgroundColor: colors.card }]}><View style={styles.formHeader}><View><Text style={[styles.eyebrow, { color: colors.accent }]}>CONNECT TEAM</Text><Text style={[styles.formTitle, { color: colors.foreground }]}>Add person</Text></View><Pressable onPress={() => setShowPersonForm(false)} hitSlop={12}><Ionicons name="close" size={22} color={colors.foreground} /></Pressable></View>{([['fullName', 'Full name', 'e.g. Ama Mensah'], ['phone', 'Phone', 'Optional phone number'], ['email', 'Email', 'Optional email address']] as const).map(([field, label, placeholder]) => <View key={field}><Text style={[styles.formLabel, { color: colors.foreground }]}>{label}</Text><TextInput value={personForm[field]} onChangeText={(value) => setPersonForm((current) => ({ ...current, [field]: value }))} placeholder={placeholder} placeholderTextColor={colors.mutedForeground} style={[styles.formInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]} /></View>)}<Text style={[styles.formLabel, { color: colors.foreground }]}>Person type</Text><View style={styles.formCountryRow}>{['visitor', 'member'].map((type) => <Pressable key={type} onPress={() => setPersonForm((current) => ({ ...current, personType: type }))} style={[styles.formCountry, { backgroundColor: personForm.personType === type ? colors.accent : colors.background, borderColor: personForm.personType === type ? colors.accent : colors.border }]}><Text style={[styles.formCountryText, { color: personForm.personType === type ? '#FFFFFF' : colors.foreground }]}>{type}</Text></Pressable>)}</View><Text style={[styles.formLabel, { color: colors.foreground }]}>Notes</Text><TextInput value={personForm.notes} onChangeText={(value) => setPersonForm((current) => ({ ...current, notes: value }))} multiline placeholder="Context the Connect Team should know" placeholderTextColor={colors.mutedForeground} style={[styles.formInput, styles.formTextArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]} /><ActionButton label="Save person" icon="checkmark-circle-outline" variant="gold" full onPress={savePerson} /></View></View></Modal>
+      <Modal animationType="slide" transparent visible={showCallForm} onRequestClose={() => setShowCallForm(false)}><View style={styles.formBackdrop}><ScrollView style={[styles.formSheet, { backgroundColor: colors.card }]} contentContainerStyle={{ paddingBottom: 28 }}><View style={styles.formHeader}><View><Text style={[styles.eyebrow, { color: colors.accent }]}>STRUCTURED CALL LOG</Text><Text style={[styles.formTitle, { color: colors.foreground }]}>What happened?</Text></View><Pressable onPress={() => setShowCallForm(false)} hitSlop={12}><Ionicons name="close" size={22} color={colors.foreground} /></Pressable></View><Text style={[styles.formLabel, { color: colors.foreground }]}>Call outcome</Text><View style={styles.formChoiceWrap}>{outcomes.map((option) => <Pressable key={option.code} onPress={() => setCallForm((current) => ({ ...current, outcomeCode: option.code }))} style={[styles.formChoice, { backgroundColor: callForm.outcomeCode === option.code ? colors.accent : colors.background, borderColor: callForm.outcomeCode === option.code ? colors.accent : colors.border }]}><Text style={[styles.formChoiceText, { color: callForm.outcomeCode === option.code ? '#FFFFFF' : colors.foreground }]}>{option.label}</Text></Pressable>)}</View><Text style={[styles.formLabel, { color: colors.foreground }]}>Care flags</Text><View style={styles.formChoiceWrap}>{situations.map((option) => <Pressable key={option.code} onPress={() => toggleSituation(option.code)} style={[styles.formChoice, { backgroundColor: callForm.situationCodes.includes(option.code) ? '#F8F1D7' : colors.background, borderColor: callForm.situationCodes.includes(option.code) ? colors.accent : colors.border }]}><Text style={[styles.formChoiceText, { color: colors.foreground }]}>{option.label}</Text></Pressable>)}</View><View style={styles.checkboxStack}>{([['prayerNeeded', 'Prayer requested'], ['pastoralAttention', 'Pastoral attention'], ['visitationRequested', 'Visitation requested'], ['foundationSchoolInterest', 'Foundation School interest']] as const).map(([field, label]) => <Pressable key={field} onPress={() => setCallForm((current) => ({ ...current, [field]: !current[field] }))} style={styles.checkboxRow}><View style={[styles.checkbox, { borderColor: callForm[field] ? colors.accent : colors.border, backgroundColor: callForm[field] ? colors.accent : colors.card }]}>{callForm[field] ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : null}</View><Text style={[styles.checkboxTitle, { color: colors.foreground }]}>{label}</Text></Pressable>)}</View><Text style={[styles.formLabel, { color: colors.foreground }]}>Next follow-up date</Text><TextInput value={callForm.nextFollowUpAt} onChangeText={(value) => setCallForm((current) => ({ ...current, nextFollowUpAt: value }))} placeholder="2026-09-14T10:00:00Z" placeholderTextColor={colors.mutedForeground} style={[styles.formInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]} /><Text style={[styles.formLabel, { color: colors.foreground }]}>Notes</Text><TextInput value={callForm.notes} onChangeText={(value) => setCallForm((current) => ({ ...current, notes: value }))} multiline placeholder="Record what the person shared and the next action" placeholderTextColor={colors.mutedForeground} style={[styles.formInput, styles.formTextArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]} /><ActionButton label="Save call and create follow-ups" icon="checkmark-circle-outline" variant="gold" full onPress={logCall} /></ScrollView></View></Modal>
+    </>
+  );
 }
 
 function ProfileStat({ value, label, icon }: { value: string; label: string; icon: IconName }) {
@@ -951,6 +1108,40 @@ const styles = StyleSheet.create({
   workspaceIntro: { marginHorizontal: 16, padding: 15, borderWidth: 1, borderRadius: 14 },
   workspaceBody: { fontSize: 12, lineHeight: 18 },
   workspaceActions: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  connectIntro: { marginHorizontal: 16, marginTop: 14, padding: 16, borderRadius: 15, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  connectIntroCopy: { flex: 1 },
+  connectTitle: { color: '#FFFFFF', fontSize: 21, fontWeight: '700', marginTop: 7 },
+  connectSubtitle: { color: '#DDE4F3', fontSize: 12, lineHeight: 17, marginTop: 6 },
+  connectIntroIcon: { width: 46, height: 46, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  connectStatsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 8, marginTop: 12 },
+  connectStat: { width: '48%', minHeight: 86, padding: 11, borderWidth: 1, borderRadius: 13 },
+  connectStatValue: { fontSize: 21, fontWeight: '700', marginTop: 9 },
+  connectStatLabel: { fontSize: 10, marginTop: 2 },
+  connectToolbar: { marginHorizontal: 16, marginTop: 14, padding: 11, borderWidth: 1, borderRadius: 14, gap: 10 },
+  connectSearch: { height: 43, borderWidth: 1, borderRadius: 10, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  connectSearchInput: { flex: 1, fontSize: 12 },
+  connectLoading: { minHeight: 110, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  connectLoadingText: { fontSize: 12 },
+  connectPersonRow: { marginHorizontal: 16, marginBottom: 9, padding: 11, borderWidth: 1, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  connectAvatar: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  connectAvatarText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
+  connectPersonCopy: { flex: 1 },
+  connectPersonName: { fontSize: 13, fontWeight: '700' },
+  connectPersonMeta: { fontSize: 10, marginTop: 4, lineHeight: 14 },
+  connectProfileCard: { marginHorizontal: 16, marginTop: 6, padding: 14, borderWidth: 1, borderRadius: 15 },
+  connectProfileHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  connectProfileName: { fontSize: 21, fontWeight: '700', marginTop: 5 },
+  connectActionRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  connectNotes: { fontSize: 12, lineHeight: 18, marginTop: 14, paddingTop: 12, borderTopWidth: 1 },
+  connectFollowUp: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11, borderTopWidth: 1 },
+  connectFollowUpType: { fontSize: 12, fontWeight: '700', textTransform: 'capitalize' },
+  connectCompleteButton: { minHeight: 33, paddingHorizontal: 10, borderRadius: 9, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  connectCompleteText: { color: '#2B8A4B', fontSize: 11, fontWeight: '700' },
+  connectInteraction: { paddingVertical: 10, borderTopWidth: 1 },
+  formChoiceWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingHorizontal: 20 },
+  formChoice: { paddingHorizontal: 11, paddingVertical: 9, borderWidth: 1, borderRadius: 10 },
+  formChoiceText: { fontSize: 11, fontWeight: '600' },
+  checkboxStack: { marginTop: 4, paddingHorizontal: 20 },
   adminBranchList: { marginTop: 14 },
   adminBranchRow: { marginHorizontal: 16, marginBottom: 9, padding: 10, borderWidth: 1, borderRadius: 13, flexDirection: 'row', alignItems: 'center', gap: 9 },
   moduleEmpty: { marginHorizontal: 16, marginTop: 14, minHeight: 170, borderWidth: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', padding: 24 },
@@ -962,6 +1153,7 @@ const styles = StyleSheet.create({
   formTitle: { fontSize: 24, lineHeight: 30, fontWeight: '700', marginTop: 5 },
   formLabel: { marginHorizontal: 20, fontSize: 12, fontWeight: '700', marginTop: 10, marginBottom: 6 },
   formInput: { marginHorizontal: 20, minHeight: 43, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, fontSize: 13 },
+  formTextArea: { minHeight: 88, paddingTop: 12, textAlignVertical: 'top' },
   formCountryRow: { paddingHorizontal: 20, gap: 7, paddingBottom: 14 },
   formCountry: { paddingVertical: 9, paddingHorizontal: 11, borderWidth: 1, borderRadius: 9 },
   formCountryText: { fontSize: 11, fontWeight: '600' },

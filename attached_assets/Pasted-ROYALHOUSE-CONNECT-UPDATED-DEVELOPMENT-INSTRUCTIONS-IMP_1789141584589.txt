@@ -1,0 +1,1411 @@
+ROYALHOUSE CONNECT — UPDATED DEVELOPMENT INSTRUCTIONS
+
+IMPORTANT
+
+Do not rebuild the project from scratch.
+
+Continue from the existing Royalhouse Connect application and upgrade/refine the current system based specifically on the requirements, problems, ideas, and workflow discussed in the Connect Team meeting with Rev.
+
+The goal is to move from the current prototype toward a real, scalable church management platform that can eventually be used across Royalhouse Chapel branches worldwide.
+
+The system must be designed around the actual church workflow rather than simply adding random features.
+
+---
+
+1. CORE OBJECTIVE
+
+Build Royalhouse Connect as a centralized church management and engagement platform.
+
+The platform should allow the church to manage:
+
+* Visitors
+* Members
+* Connect Team
+* Follow-ups
+* Membership journey
+* Foundation School
+* Ministries
+* Church units
+* Leadership
+* Events
+* Sermons
+* Podcast
+* Communication
+* Notifications
+* Giving
+* Administrative activities
+* Reports
+* Church data
+* Branches
+* Users
+* Permissions
+* Church-wide activity
+
+The most important immediate objective is solving the Connect Team workflow.
+
+The system must reduce dependence on manually maintained spreadsheets and fragmented workflows while preserving appropriate backup/export capabilities.
+
+---
+
+2. REV MUST BE SUPER ADMIN
+
+Rev must have a Super Admin account.
+
+The Super Admin should have the highest level of access in the system.
+
+Rev should be able to see the overall activity of the church across ALL church units.
+
+This includes:
+
+* Connect Team
+* Finance
+* Ministries
+* Media
+* Worship
+* Children's Ministry
+* Men Makers
+* Royal Ladies
+* WMG
+* SHEvolve
+* Events
+* Membership
+* Foundation School
+* Communications
+* Administration
+* Other officially recognized church units
+
+Rev's dashboard should provide a church-wide overview.
+
+He should be able to drill down from:
+
+Church-wide overview
+
+→ Unit
+
+→ Team
+
+→ Individual activity
+
+The system should not expose sensitive information unnecessarily. Super Admin access should still respect appropriate confidentiality controls where required by church governance.
+
+---
+
+3. SUPER ADMIN DASHBOARD
+
+Create a comprehensive Super Admin dashboard.
+
+Rev should be able to see:
+
+* Total members
+* New visitors
+* Returning visitors
+* New members
+* Foundation School candidates
+* Foundation School students
+* Foundation School graduates
+* Connect Team activity
+* Pending follow-ups
+* Overdue follow-ups
+* Pastoral follow-ups
+* Ministry activity
+* Events
+* Announcements
+* Communication activity
+* Giving overview where authorized
+* Church unit activity
+* User activity
+* Recent system activity
+* Important alerts
+* Pending tasks
+* Reports
+* Branch activity when multi-branch functionality is enabled
+
+The dashboard should show real-time or near-real-time information where technically appropriate.
+
+---
+
+4. CONNECT TEAM — MAIN PRIORITY
+
+Create a dedicated Connect Team interface inside the Admin system.
+
+Connect Team members should not have access to the entire administration system.
+
+Their permissions must be restricted according to their role.
+
+The Connect Team interface should allow them to:
+
+* View assigned visitors
+* View assigned members
+* Search people
+* Open profiles
+* View previous interactions
+* Make calls
+* Log calls
+* Record outcomes
+* Add notes
+* Schedule follow-ups
+* Mark follow-ups completed
+* Request pastoral attention
+* Report prayer needs
+* Report welfare needs
+* Report visitation needs
+* Refer someone to Foundation School
+* Update appropriate statuses
+* Receive notifications
+* See their assigned workload
+
+---
+
+5. AUTOMATIC CONNECT TEAM INPUT
+
+The Connect Team must be able to automatically input information into the system without having to repeatedly type the same information manually.
+
+The interface should use structured forms, dropdowns, checkboxes, selections, and automated fields wherever appropriate.
+
+For example:
+
+Instead of requiring a Connect Team member to type:
+
+“I called Brother John and he told me he was sick and would like someone to visit him.”
+
+The system should allow:
+
+Person:
+Brother John
+
+Call outcome:
+Spoke with visitor/member
+
+Situation:
+Sick
+
+Additional need:
+Visitation requested
+
+Prayer needed:
+Yes
+
+Pastoral attention:
+Yes
+
+Next follow-up:
+[Date]
+
+Notes:
+[Optional free-text field]
+
+Then the system automatically records the interaction.
+
+The system should also trigger the appropriate next action based on the selected information.
+
+---
+
+6. CALL LOGGING
+
+Create a very simple call logging workflow.
+
+When a Connect Team member opens an assigned person and selects “Log Call,” the system should provide standardized options.
+
+Possible options should include configurable choices such as:
+
+* No answer
+* Left message
+* Spoke with person
+* Person plans to return
+* Person is interested
+* Person is not interested
+* Person attends another church
+* Needs prayer
+* Sick
+* Visitation requested
+* Pastoral follow-up needed
+* Interested in Foundation School
+* Foundation School follow-up
+* Became a member
+* Requested another call
+* Wrong number
+* Other
+
+These options must be configurable by authorized administrators.
+
+Do not hard-code the final list.
+
+---
+
+7. AUTOMATIC TRIGGERS
+
+The system must support workflow triggers.
+
+Example:
+
+IF:
+
+Connect Team member selects “Sick”
+
+THEN:
+
+* Record the interaction
+* Flag the person's profile
+* Create appropriate follow-up
+* Notify the appropriate person/team if configured
+
+Another example:
+
+IF:
+
+Connect Team member selects “Needs Pastoral Follow-up”
+
+THEN:
+
+* Create pastoral task
+* Notify authorized pastoral/admin users
+* Display the task on the relevant dashboard
+
+Another:
+
+IF:
+
+Connect Team member selects “Interested in Foundation School”
+
+THEN:
+
+* Update Foundation School interest status
+* Create follow-up
+* Notify the appropriate coordinator if configured
+
+Another:
+
+IF:
+
+Follow-up becomes overdue
+
+THEN:
+
+* Notify Connect Team member
+* Notify Connect Team leader where configured
+* Display overdue status on dashboard
+
+Build this as a flexible workflow engine rather than creating separate hard-coded logic for every situation.
+
+---
+
+8. PERSON PROFILE
+
+Every person should have one centralized profile.
+
+Avoid duplicate records wherever possible.
+
+A person's profile should contain:
+
+* Full name
+* Phone number
+* Email
+* Profile photo where appropriate
+* Visitor/member status
+* First visit date
+* Most recent visit
+* Visit history
+* Connect Team assignment
+* Call history
+* Follow-up history
+* Notes
+* Prayer requests
+* Pastoral follow-up
+* Foundation School status
+* Membership status
+* Ministry involvement
+* Relevant tags
+* Assigned tasks
+* Next follow-up
+* Created date
+* Last updated date
+
+The profile should show the person's journey through the church.
+
+---
+
+9. MEMBER JOURNEY
+
+Build the system around a person's progression.
+
+Potential workflow:
+
+First-Time Visitor
+
+→ Visitor Record
+
+→ Connect Team Assignment
+
+→ First Contact
+
+→ Follow-Up
+
+→ Returning Visitor
+
+→ Foundation School Interest
+
+→ Foundation School Enrollment
+
+→ Foundation School Completion
+
+→ Membership
+
+→ Ministry Integration
+
+→ Active Member
+
+The exact statuses must remain configurable.
+
+---
+
+10. SEARCH
+
+The system must have powerful global search.
+
+Authorized users should be able to search by:
+
+* Name
+* Phone number
+* Email
+* Member ID
+* Visitor ID
+* Other approved identifiers
+
+Search results should clearly distinguish:
+
+* Visitor
+* Member
+* Connect Team contact
+* Other person types
+
+---
+
+11. MEMBER ID
+
+The system should support member IDs.
+
+Do not automatically give every first-time visitor a member ID if the church's current policy does not do so.
+
+The system should allow an authorized administrator to define when the official member ID is created.
+
+Once created, the member ID should remain attached to the person's profile.
+
+---
+
+12. CONNECT TEAM ASSIGNMENTS
+
+Build an assignment system.
+
+Administrators should be able to:
+
+* Assign visitors
+* Reassign visitors
+* Assign multiple people
+* View team workload
+* See unassigned visitors
+* See overdue assignments
+* See completed follow-ups
+* View team activity
+
+Connect Team leaders should be able to see appropriate team-level information.
+
+Individual Connect Team members should only see the information they are authorized to access.
+
+---
+
+13. CONNECT TEAM DASHBOARD
+
+Create a dedicated Connect Team dashboard.
+
+Show:
+
+* My assigned people
+* New assignments
+* Calls due today
+* Upcoming follow-ups
+* Overdue follow-ups
+* Completed calls
+* Unsuccessful calls
+* People needing attention
+* Recent activity
+* Quick “Log Call” action
+
+The interface should be extremely simple and mobile-friendly.
+
+A Connect Team member should be able to log a call in seconds.
+
+---
+
+14. LEADERSHIP REPORTING
+
+Rev wants to be able to understand what is happening in real time.
+
+Create reports for:
+
+* Visitors
+* Visitor follow-up
+* Connect Team activity
+* Visitor-to-member conversion
+* Foundation School progression
+* Membership growth
+* Pastoral follow-up
+* Ministry activity
+* Church unit activity
+
+Reports should support:
+
+* Daily
+* Weekly
+* Monthly
+* Quarterly
+* Yearly
+* Custom date ranges
+
+---
+
+15. THE MONTHLY/YEARLY VISITOR PROBLEM
+
+The current workflow uses Text In Church plus separate yearly spreadsheets.
+
+The new system should provide a better centralized workflow.
+
+The system should maintain historical information instead of only showing the current year's visitors.
+
+Users should be able to filter:
+
+2025
+
+2026
+
+2027
+
+etc.
+
+They should also be able to search historical visitors without manually opening old spreadsheets.
+
+---
+
+16. SPREADSHEET REPLACEMENT
+
+The goal is to eliminate unnecessary manual spreadsheet work.
+
+The application should become the primary operational system.
+
+However:
+
+Do not completely eliminate export/backup capabilities.
+
+Authorized administrators should be able to export appropriate data to:
+
+* CSV
+* Excel-compatible formats
+* PDF reports where appropriate
+
+This provides a backup and reporting mechanism.
+
+---
+
+17. DATA BACKUPS
+
+Implement a proper backup strategy.
+
+The system should support:
+
+* Automated database backups
+* Scheduled backups
+* Cloud backup strategy
+* Data export
+* Disaster recovery planning
+* Restore procedures
+
+The system should be designed so that if a hosting provider or platform becomes unavailable, the church is not permanently dependent on that provider for its data.
+
+---
+
+18. TEXT IN CHURCH
+
+Do not immediately remove Text In Church.
+
+First build the system so we can understand what functionality is currently dependent on it.
+
+Document the current functions.
+
+The eventual architecture should allow:
+
+Option A:
+Continue using Text In Church
+
+Option B:
+Integrate with Text In Church
+
+Option C:
+Gradually replace specific Text In Church functions with Royalhouse Connect
+
+Do not break existing church operations.
+
+---
+
+19. COMMUNICATION SYSTEM
+
+Build a centralized communication system.
+
+Support:
+
+* SMS
+* Email
+* Push notifications
+* In-app notifications
+
+Allow authorized users to send messages to appropriate groups.
+
+Possible audiences:
+
+* Entire church
+* Visitors
+* Members
+* Connect Team
+* Specific ministry
+* Specific church unit
+* Leadership
+* Event attendees
+* Specific individuals
+
+Support:
+
+* Scheduled messages
+* Automated messages
+* Follow-up messages
+* Event reminders
+* Announcements
+* Emergency communications
+
+---
+
+20. PODCAST
+
+Rev specifically requested a podcast workflow.
+
+Create a Podcast section.
+
+The system should allow the church to publish sermon audio to podcast platforms.
+
+Priority platforms:
+
+* Apple Podcasts
+* Spotify
+* Other major podcast platforms as appropriate
+
+The app and website should both contain direct links to the official podcast.
+
+The system should support:
+
+* Podcast episodes
+* Episode descriptions
+* Cover art
+* Episode dates
+* Sermon title
+* Speaker
+* Scripture/reference information
+* Links
+* Part 1 / Part 2
+* Podcast platform links
+
+---
+
+21. SERMON AUDIO WORKFLOW
+
+The current idea is to obtain the original Sunday service recording from the Media Team.
+
+Potential workflow:
+
+Sunday Service
+
+→ Original Recording
+
+→ Extract Audio
+
+→ Edit Sermon
+
+→ Intro
+
+→ Sermon
+
+→ Outro
+
+→ Publish Podcast
+
+→ Publish to App
+
+→ Publish to Website
+
+The system should not require unnecessary duplication of work.
+
+The Media Team should be able to upload the approved sermon/audio once.
+
+The appropriate platforms should then receive the content through the defined workflow.
+
+---
+
+22. SERMON LENGTH
+
+Rev discussed producing shorter podcast episodes.
+
+The system should support:
+
+* Approximately 20-minute episodes
+* Approximately 29-minute episodes
+* Approximately 30-minute episodes
+* Part 1
+* Part 2
+
+Do not automatically cut sermons without approval.
+
+Allow the media/admin workflow to define the final episode structure.
+
+---
+
+23. PODCAST INTRO AND OUTRO
+
+Support a standardized podcast intro and outro.
+
+The church should be able to upload approved intro/outro audio.
+
+Do not generate or publish AI voiceovers automatically without an authorized approval workflow.
+
+---
+
+24. APP MEMBER EXPERIENCE
+
+The mobile app should provide members with easy access to:
+
+* Home
+* Sermons
+* Podcast
+* Live Stream
+* Events
+* Giving
+* Prayer
+* Ministries
+* Announcements
+* Resources
+* E-books
+* Church history
+* Leadership
+* Contact
+* Notifications
+* Member profile
+
+Everything must actually work.
+
+No dead buttons.
+
+No placeholder navigation that leads nowhere.
+
+---
+
+25. WEBSITE
+
+The website should use the same central content system where appropriate.
+
+Potential public website sections:
+
+* Home
+* About
+* Church History
+* Leadership
+* Ministries
+* Locations
+* Events
+* Sermons
+* Podcast
+* Live Stream
+* Gallery
+* Resources
+* E-books
+* Give Online
+* Contact
+* Prayer
+* Connect
+* Visit Us
+
+All links and buttons must open the correct destination.
+
+---
+
+26. CENTRAL CONTENT MANAGEMENT
+
+Avoid entering the same content multiple times.
+
+Where possible:
+
+Admin creates content once
+
+→ Website receives it
+
+→ Mobile app receives it
+
+→ Relevant sections update automatically
+
+Examples:
+
+New sermon
+
+→ Sermon library
+
+→ App
+
+→ Website
+
+→ Podcast link
+
+New event
+
+→ Events page
+
+→ App
+
+→ Notifications where configured
+
+New announcement
+
+→ Website/app/notification channels where authorized
+
+---
+
+27. ADMIN SYSTEM
+
+Build a comprehensive Admin Center.
+
+Admin should be modular.
+
+Sections should include:
+
+* Dashboard
+* People
+* Visitors
+* Members
+* Connect Team
+* Foundation School
+* Ministries
+* Church Units
+* Events
+* Sermons
+* Podcast
+* Media
+* Communications
+* Notifications
+* Giving
+* Finance
+* Reports
+* E-books
+* Resources
+* Website Content
+* App Content
+* Users
+* Roles & Permissions
+* Settings
+* Audit Logs
+* Backups
+* Branch Management
+
+Only show sections to users who have permission to access them.
+
+---
+
+28. CHURCH UNIT MANAGEMENT
+
+The system should support multiple church units.
+
+Each unit can have:
+
+* Leader
+* Members
+* Activities
+* Events
+* Announcements
+* Tasks
+* Reports
+* Communication
+* Documents/resources where appropriate
+
+Examples include:
+
+* Connect Team
+* Finance
+* Media
+* Worship
+* Children's Ministry
+* Men Makers
+* Royal Ladies
+* WMG
+* SHEvolve
+* Prayer
+* Evangelism
+* Protocol
+* Ushering
+* Foundation School
+* Other officially recognized units
+
+Do not assume every unit needs identical functionality.
+
+---
+
+29. REV'S CHURCH-WIDE VISIBILITY
+
+Rev's Super Admin dashboard should allow him to see activity across all church units.
+
+For example:
+
+Connect Team
+
+→ activity
+
+Finance
+
+→ appropriate financial overview
+
+Media
+
+→ content activity
+
+Ministries
+
+→ ministry activity
+
+Events
+
+→ event activity
+
+Membership
+
+→ membership activity
+
+Communication
+
+→ communication activity
+
+The dashboard should make it possible to identify what is happening without requiring Rev to open multiple unrelated systems.
+
+---
+
+30. ROLE-BASED ACCESS
+
+Implement robust role-based permissions.
+
+Potential roles:
+
+* Super Admin
+* Pastoral Leadership
+* Church Administrator
+* Connect Team Leader
+* Connect Team Member
+* Finance Administrator
+* Finance Staff
+* Ministry Leader
+* Ministry Administrator
+* Media Administrator
+* Foundation School Administrator
+* Content Administrator
+* Member
+* Visitor
+
+These roles should be configurable.
+
+Do not hard-code permissions unnecessarily.
+
+---
+
+31. AUDIT LOG
+
+Create an audit trail.
+
+Track important administrative actions such as:
+
+* Login
+* Record creation
+* Record update
+* Assignment changes
+* Status changes
+* Financial actions
+* Content publication
+* User creation
+* Permission changes
+* Data exports
+* Administrative actions
+
+This is especially important for a system containing church member and financial information.
+
+---
+
+32. FINANCE / GIVING
+
+Maintain the existing giving concept in the application.
+
+Giving categories should be configurable.
+
+Potential categories discussed:
+
+* Tithes
+* Offerings
+* First Fruits
+* Faith Seed
+* Building Donations
+* Children's Ministry
+* Welfare
+* Men Makers Ministry
+* Royal Ladies
+* WMG
+* WMG Camp
+* SHEvolve
+* Missions
+* Special Projects
+
+Do not assume these are final.
+
+Allow authorized Finance/Admin users to manage giving categories.
+
+---
+
+33. FINANCE PERMISSIONS
+
+Financial information must be protected.
+
+Regular members should not see church financial administration.
+
+Connect Team members should not see financial administration unless specifically authorized.
+
+Finance users should have access according to their assigned permissions.
+
+Rev's Super Admin access should provide appropriate church-wide financial visibility according to church policy.
+
+---
+
+34. E-BOOKS AND RESOURCES
+
+Build an e-book/resource marketplace.
+
+Authorized church leaders and approved authors should be able to publish:
+
+* E-books
+* Sermon resources
+* Teaching materials
+* Books
+* Digital resources
+
+Support:
+
+* Cover image
+* Author
+* Title
+* Description
+* Price
+* Categories
+* Preview
+* Purchase
+* Secure digital delivery
+* Order history
+
+All purchases must use secure payment processing.
+
+---
+
+35. EVENTS
+
+Build event management.
+
+Support:
+
+* Event creation
+* Registration
+* Date/time
+* Location
+* Description
+* Speaker
+* Ministry
+* Capacity
+* Registration status
+* Event reminders
+* Notifications
+* Event attendance where appropriate
+
+---
+
+36. NOTIFICATIONS
+
+Build a notification center.
+
+Support:
+
+* In-app notifications
+* Push notifications
+* SMS notifications where configured
+* Email notifications
+
+Users should receive notifications based on role, assignment, event registration, follow-up tasks, and other configured triggers.
+
+---
+
+37. MOBILE-FIRST DESIGN
+
+The mobile application is a major priority.
+
+The Connect Team workflow must be extremely easy on a phone.
+
+The interface should allow someone to:
+
+Open app
+
+→ See assigned people
+
+→ Select person
+
+→ Call
+
+→ Log outcome
+
+→ Select next action
+
+→ Save
+
+This should require minimal typing.
+
+---
+
+38. APP + WEB ADMIN
+
+The member-facing experience should be mobile-first.
+
+The administrative system can have a more comprehensive web dashboard.
+
+Ensure both communicate with the same secure backend.
+
+Do not create disconnected databases.
+
+---
+
+39. MULTI-BRANCH ARCHITECTURE
+
+The system should be designed with future multi-branch support in mind.
+
+Architecture should allow:
+
+* Branch
+* Region
+* Country
+* Global organization
+
+Each branch can have appropriate:
+
+* Members
+* Visitors
+* Connect Team
+* Ministries
+* Events
+* Giving
+* Leaders
+* Sermons
+* Activities
+
+Central leadership can eventually see global information based on permissions.
+
+Do not force all branches to use the same operational settings.
+
+---
+
+40. SCALABILITY
+
+Do not build the system in a way that only works for one church location.
+
+Start with the current church workflow but architect it so it can eventually scale across Royalhouse Chapel worldwide.
+
+The first deployment can be focused.
+
+The underlying architecture should not make future expansion unnecessarily difficult.
+
+---
+
+41. PERFORMANCE
+
+The application must be fast.
+
+Optimize:
+
+* Dashboard loading
+* Search
+* Member profiles
+* Visitor lists
+* Reports
+* Notifications
+* Mobile navigation
+* Media loading
+
+Do not load unnecessary data on every page.
+
+---
+
+42. ERROR HANDLING
+
+Every important action needs proper error handling.
+
+Examples:
+
+* Failed save
+* Failed payment
+* Failed notification
+* Failed upload
+* Failed search
+* Failed login
+* Network interruption
+* Database error
+
+Users should receive clear messages.
+
+Do not silently fail.
+
+---
+
+43. BUG FIXING
+
+Before considering any feature complete:
+
+Test it.
+
+Fix bugs.
+
+Test again.
+
+Check mobile.
+
+Check desktop.
+
+Check permissions.
+
+Check navigation.
+
+Check forms.
+
+Check database operations.
+
+Check edge cases.
+
+Check error states.
+
+Everything that can be clicked must either:
+
+1. Perform the intended action
+
+or
+
+2. Clearly indicate that the feature is unavailable
+
+No dead buttons.
+
+No fake functionality.
+
+No broken links.
+
+No placeholder screens presented as finished features.
+
+---
+
+44. SECURITY
+
+Treat this as a real church information system.
+
+Implement appropriate:
+
+* Authentication
+* Authorization
+* Role-based access
+* Secure password handling
+* Session management
+* Encryption in transit
+* Secure data storage
+* Audit logs
+* Backup strategy
+* Rate limiting where appropriate
+* Input validation
+* File upload security
+* Payment security
+* Privacy controls
+
+Do not expose private member information through public pages or APIs.
+
+---
+
+45. DEVELOPMENT APPROACH
+
+Do not attempt to build everything simultaneously without testing.
+
+Use phases.
+
+Phase 1:
+
+Connect Team + People + Visitor/Member Management + Follow-Up + Admin + Reporting
+
+Phase 2:
+
+Foundation School + Ministries + Events + Notifications + Communication
+
+Phase 3:
+
+Sermons + Podcast + Media + Resources + E-books
+
+Phase 4:
+
+Giving + Finance integrations and reporting
+
+Phase 5:
+
+Advanced church-wide administration + multi-branch capabilities
+
+The exact phase breakdown can be adjusted after requirements are finalized.
+
+---
+
+46. REQUIREMENTS SHOULD REMAIN CONFIGURABLE
+
+Do not hard-code assumptions about:
+
+* Church units
+* Ministries
+* Connect Team outcomes
+* Membership statuses
+* Foundation School stages
+* User roles
+* Branches
+* Giving categories
+* Notification rules
+* Workflows
+
+Build administrative settings so authorized administrators can configure these.
+
+---
+
+47. DO NOT INVENT CHURCH INFORMATION
+
+Where official information is unavailable, create editable fields rather than inventing information.
+
+This includes:
+
+* Leadership titles
+* Ministry names
+* Branches
+* Addresses
+* Contact information
+* Church history
+* Financial policies
+* Organizational structure
+
+Use official information once supplied.
+
+---
+
+48. REQUIREMENT GATHERING
+
+The current Connect Team meeting is the beginning of requirement gathering.
+
+Build the application so additional requirements can be added after launch.
+
+Do not assume Version 1 will contain everything.
+
+The architecture must allow continuous improvement.
+
+---
+
+49. MAIN PROBLEM WE ARE SOLVING
+
+The current workflow is fragmented.
+
+Information exists across:
+
+* Text In Church
+* Spreadsheets
+* Other platforms
+* Manual processes
+
+The desired direction is:
+
+One centralized system
+
+→ One person record
+
+→ One history
+
+→ One workflow
+
+→ Automated follow-up
+
+→ Role-based access
+
+→ Real-time reporting
+
+→ Leadership visibility
+
+→ Reliable backups
+
+→ Scalable architecture
+
+---
+
+50. FINAL PRODUCT VISION
+
+Royalhouse Connect should ultimately become the digital operating system for Royalhouse Chapel.
+
+It should connect:
+
+People
+
+Visitors
+
+Members
+
+Connect Team
+
+Pastoral Leadership
+
+Church Units
+
+Ministries
+
+Finance
+
+Events
+
+Sermons
+
+Podcast
+
+Communication
+
+Giving
+
+Resources
+
+Administration
+
+Branches
+
+Leadership
+
+The immediate priority is to solve the Connect Team workflow properly.
+
+Do not lose that focus.
+
+Build the foundation correctly, make it easy for the Connect Team to use, give Rev the church-wide visibility he requested, and make the architecture strong enough to expand into the larger Royalhouse Chapel network later.
+
+Most importantly:
+
+Do not just build screens.
+
+Build the actual workflows.
+
+Every major action should have a clear purpose, a clear user, a clear permission level, a clear data record, and where appropriate, an automated next step.
+
+Continue from the existing project.
+
+Do not start over unnecessarily.
+
+Review the current implementation first, preserve working components, identify gaps, then implement these requirements systematically.
+
+Fix all bugs and test the entire application before presenting the updated version.

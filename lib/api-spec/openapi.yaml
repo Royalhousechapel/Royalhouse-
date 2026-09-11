@@ -146,6 +146,186 @@ paths:
           description: Insufficient permissions
         "404":
           description: Branch not found
+  /admin/connect/options:
+    get:
+      operationId: listConnectWorkflowOptions
+      tags: [admin]
+      summary: List active Connect Team workflow options
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Configurable call and situation options
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkflowOption"
+  /admin/connect/people:
+    get:
+      operationId: listConnectPeople
+      tags: [admin]
+      summary: Search people in the Connect Team scope
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: People visible to the signed-in Connect Team user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConnectPerson"
+    post:
+      operationId: createConnectPerson
+      tags: [admin]
+      summary: Create a visitor or member person record
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectPersonInput"
+      responses:
+        "201":
+          description: Person created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectPerson"
+        "400":
+          description: Invalid person data
+  /admin/connect/summary:
+    get:
+      operationId: getConnectSummary
+      tags: [admin]
+      summary: Get Connect Team workload summary
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Connect Team metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectSummary"
+  /admin/connect/people/{id}:
+    get:
+      operationId: getConnectPersonProfile
+      tags: [admin]
+      summary: Get a person profile and interaction history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Person profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectPersonProfile"
+        "403":
+          description: Person is outside the user's assignment scope
+        "404":
+          description: Person not found
+  /admin/connect/people/{id}/assign:
+    post:
+      operationId: assignConnectPerson
+      tags: [admin]
+      summary: Assign a person to a Connect Team member
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignConnectPersonRequest"
+      responses:
+        "201":
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectAssignment"
+        "400":
+          description: Invalid assignment
+        "403":
+          description: Assignment permission denied
+        "404":
+          description: Person not found
+  /admin/connect/people/{id}/interactions:
+    post:
+      operationId: logConnectInteraction
+      tags: [admin]
+      summary: Log a structured Connect Team interaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogConnectInteractionRequest"
+      responses:
+        "201":
+          description: Interaction and triggered follow-ups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogConnectInteractionResult"
+        "400":
+          description: Invalid interaction
+        "403":
+          description: Person is outside the user's assignment scope
+        "404":
+          description: Person not found
+  /admin/connect/follow-ups/{id}/complete:
+    post:
+      operationId: completeConnectFollowUp
+      tags: [admin]
+      summary: Mark a Connect Team follow-up complete
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Completed follow-up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectFollowUp"
+        "403":
+          description: Follow-up is outside the user's assignment scope
+        "404":
+          description: Follow-up not found
 components:
   securitySchemes:
     bearerAuth:
@@ -212,4 +392,168 @@ components:
         modules:
           type: array
           items: { type: string }
+    ConnectPerson:
+      type: object
+      required: [id, personType, fullName, visitorStatus, membershipStatus, foundationSchoolStatus, pastoralFollowUp, tags, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        branchId: { type: ["string", "null"] }
+        personType: { type: string }
+        fullName: { type: string }
+        phone: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        visitorId: { type: ["string", "null"] }
+        memberId: { type: ["string", "null"] }
+        visitorStatus: { type: string }
+        membershipStatus: { type: string }
+        firstVisitAt: { type: ["string", "null"], format: date-time }
+        lastVisitAt: { type: ["string", "null"], format: date-time }
+        foundationSchoolStatus: { type: string }
+        notes: { type: ["string", "null"] }
+        prayerNeeds: { type: ["string", "null"] }
+        pastoralFollowUp: { type: boolean }
+        tags:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ConnectPersonInput:
+      type: object
+      required: [fullName]
+      properties:
+        branchId: { type: ["string", "null"] }
+        personType: { type: string }
+        fullName: { type: string, minLength: 1 }
+        phone: { type: string }
+        email: { type: string }
+        visitorId: { type: string }
+        memberId: { type: string }
+        visitorStatus: { type: string }
+        membershipStatus: { type: string }
+        firstVisitAt: { type: string, format: date-time }
+        lastVisitAt: { type: string, format: date-time }
+        foundationSchoolStatus: { type: string }
+        notes: { type: string }
+        prayerNeeds: { type: string }
+        pastoralFollowUp: { type: boolean }
+        tags:
+          type: array
+          items: { type: string }
+    ConnectAssignment:
+      type: object
+      required: [id, personId, assignedClerkUserId, assignedByClerkUserId, status, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        personId: { type: string }
+        assignedClerkUserId: { type: string }
+        assignedByClerkUserId: { type: string }
+        status: { type: string }
+        dueAt: { type: ["string", "null"], format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ConnectInteraction:
+      type: object
+      required: [id, personId, actorClerkUserId, interactionType, outcomeCode, situationCodes, prayerNeeded, pastoralAttention, visitationRequested, foundationSchoolInterest, createdAt]
+      properties:
+        id: { type: string }
+        personId: { type: string }
+        actorClerkUserId: { type: string }
+        interactionType: { type: string }
+        outcomeCode: { type: string }
+        situationCodes:
+          type: array
+          items: { type: string }
+        prayerNeeded: { type: boolean }
+        pastoralAttention: { type: boolean }
+        visitationRequested: { type: boolean }
+        foundationSchoolInterest: { type: boolean }
+        notes: { type: ["string", "null"] }
+        nextFollowUpAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    ConnectFollowUp:
+      type: object
+      required: [id, personId, followUpType, status, dueAt, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        personId: { type: string }
+        interactionId: { type: ["string", "null"] }
+        assignedClerkUserId: { type: ["string", "null"] }
+        followUpType: { type: string }
+        status: { type: string }
+        dueAt: { type: string, format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    WorkflowOption:
+      type: object
+      required: [id, code, label, category, active, triggerConfig, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        label: { type: string }
+        category: { type: string }
+        active: { type: boolean }
+        triggerConfig:
+          type: object
+          additionalProperties: true
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ConnectSummary:
+      type: object
+      required: [peopleCount, assignedCount, unassignedCount, callsToday, pendingFollowUps, overdueFollowUps, pastoralAttentionCount]
+      properties:
+        peopleCount: { type: number }
+        assignedCount: { type: number }
+        unassignedCount: { type: number }
+        callsToday: { type: number }
+        pendingFollowUps: { type: number }
+        overdueFollowUps: { type: number }
+        pastoralAttentionCount: { type: number }
+    AssignConnectPersonRequest:
+      type: object
+      required: [assignedClerkUserId]
+      properties:
+        assignedClerkUserId: { type: string, minLength: 1 }
+        dueAt: { type: string, format: date-time }
+    LogConnectInteractionRequest:
+      type: object
+      required: [outcomeCode]
+      properties:
+        interactionType: { type: string }
+        outcomeCode: { type: string, minLength: 1 }
+        situationCodes:
+          type: array
+          items: { type: string }
+        prayerNeeded: { type: boolean }
+        pastoralAttention: { type: boolean }
+        visitationRequested: { type: boolean }
+        foundationSchoolInterest: { type: boolean }
+        notes: { type: string }
+        nextFollowUpAt: { type: string, format: date-time }
+    ConnectPersonProfile:
+      type: object
+      required: [person, assignments, interactions, followUps]
+      properties:
+        person:
+          $ref: "#/components/schemas/ConnectPerson"
+        assignments:
+          type: array
+          items: { $ref: "#/components/schemas/ConnectAssignment" }
+        interactions:
+          type: array
+          items: { $ref: "#/components/schemas/ConnectInteraction" }
+        followUps:
+          type: array
+          items: { $ref: "#/components/schemas/ConnectFollowUp" }
+    LogConnectInteractionResult:
+      type: object
+      required: [interaction, followUps]
+      properties:
+        interaction:
+          $ref: "#/components/schemas/ConnectInteraction"
+        followUps:
+          type: array
+          items: { $ref: "#/components/schemas/ConnectFollowUp" }
 

@@ -70,3 +70,163 @@ export interface AdminProfile {
   modules: string[];
 }
 
+export interface ConnectPerson {
+  id: string;
+  /** @nullable */
+  branchId?: string | null;
+  personType: string;
+  fullName: string;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  visitorId?: string | null;
+  /** @nullable */
+  memberId?: string | null;
+  visitorStatus: string;
+  membershipStatus: string;
+  /** @nullable */
+  firstVisitAt?: string | null;
+  /** @nullable */
+  lastVisitAt?: string | null;
+  foundationSchoolStatus: string;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  prayerNeeds?: string | null;
+  pastoralFollowUp: boolean;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectPersonInput {
+  /** @nullable */
+  branchId?: string | null;
+  personType?: string;
+  /** @minLength 1 */
+  fullName: string;
+  phone?: string;
+  email?: string;
+  visitorId?: string;
+  memberId?: string;
+  visitorStatus?: string;
+  membershipStatus?: string;
+  firstVisitAt?: string;
+  lastVisitAt?: string;
+  foundationSchoolStatus?: string;
+  notes?: string;
+  prayerNeeds?: string;
+  pastoralFollowUp?: boolean;
+  tags?: string[];
+}
+
+export interface ConnectAssignment {
+  id: string;
+  personId: string;
+  assignedClerkUserId: string;
+  assignedByClerkUserId: string;
+  status: string;
+  /** @nullable */
+  dueAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectInteraction {
+  id: string;
+  personId: string;
+  actorClerkUserId: string;
+  interactionType: string;
+  outcomeCode: string;
+  situationCodes: string[];
+  prayerNeeded: boolean;
+  pastoralAttention: boolean;
+  visitationRequested: boolean;
+  foundationSchoolInterest: boolean;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  nextFollowUpAt?: string | null;
+  createdAt: string;
+}
+
+export interface ConnectFollowUp {
+  id: string;
+  personId: string;
+  /** @nullable */
+  interactionId?: string | null;
+  /** @nullable */
+  assignedClerkUserId?: string | null;
+  followUpType: string;
+  status: string;
+  dueAt: string;
+  /** @nullable */
+  completedAt?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type WorkflowOptionTriggerConfig = { [key: string]: unknown };
+
+export interface WorkflowOption {
+  id: string;
+  code: string;
+  label: string;
+  category: string;
+  active: boolean;
+  triggerConfig: WorkflowOptionTriggerConfig;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectSummary {
+  peopleCount: number;
+  assignedCount: number;
+  unassignedCount: number;
+  callsToday: number;
+  pendingFollowUps: number;
+  overdueFollowUps: number;
+  pastoralAttentionCount: number;
+}
+
+export interface AssignConnectPersonRequest {
+  /** @minLength 1 */
+  assignedClerkUserId: string;
+  dueAt?: string;
+}
+
+export interface LogConnectInteractionRequest {
+  interactionType?: string;
+  /** @minLength 1 */
+  outcomeCode: string;
+  situationCodes?: string[];
+  prayerNeeded?: boolean;
+  pastoralAttention?: boolean;
+  visitationRequested?: boolean;
+  foundationSchoolInterest?: boolean;
+  notes?: string;
+  nextFollowUpAt?: string;
+}
+
+export interface ConnectPersonProfile {
+  person: ConnectPerson;
+  assignments: ConnectAssignment[];
+  interactions: ConnectInteraction[];
+  followUps: ConnectFollowUp[];
+}
+
+export interface LogConnectInteractionResult {
+  interaction: ConnectInteraction;
+  followUps: ConnectFollowUp[];
+}
+
+export type ListConnectPeopleParams = {
+search?: string;
+};
+

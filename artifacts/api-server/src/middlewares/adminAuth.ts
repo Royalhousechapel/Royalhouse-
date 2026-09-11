@@ -9,11 +9,15 @@ export type AdminRequest = Request & {
 };
 
 export const adminModulePermissions: Record<string, string[]> = {
-  "Super Admin": ["Members", "Branches", "Ministries", "Sermons & Media", "Events", "Finance & Giving", "Communication", "Digital Store", "Users & Roles", "Settings", "Audit Logs"],
-  "Headquarters Admin": ["Members", "Branches", "Ministries", "Sermons & Media", "Events", "Finance & Giving", "Communication", "Digital Store", "Audit Logs"],
-  "Regional Admin": ["Members", "Branches", "Ministries", "Events", "Communication", "Audit Logs"],
-  "Branch Admin": ["Members", "Branches", "Ministries", "Events", "Communication"],
-  Pastor: ["Members", "Branches", "Ministries", "Sermons & Media", "Events", "Communication"],
+  "Super Admin": ["Members", "Connect Team", "Branches", "Ministries", "Sermons & Media", "Events", "Finance & Giving", "Communication", "Digital Store", "Users & Roles", "Settings", "Audit Logs"],
+  "Headquarters Admin": ["Members", "Connect Team", "Branches", "Ministries", "Sermons & Media", "Events", "Finance & Giving", "Communication", "Digital Store", "Audit Logs"],
+  "Regional Admin": ["Members", "Connect Team", "Branches", "Ministries", "Events", "Communication", "Audit Logs"],
+  "Branch Admin": ["Members", "Connect Team", "Branches", "Ministries", "Events", "Communication"],
+  Pastor: ["Members", "Connect Team", "Branches", "Ministries", "Sermons & Media", "Events", "Communication"],
+  "Pastoral Leadership": ["Members", "Connect Team", "Ministries", "Events", "Communication"],
+  "Church Administrator": ["Members", "Connect Team", "Branches", "Ministries", "Events", "Communication", "Audit Logs"],
+  "Connect Team Leader": ["Connect Team", "Members", "Audit Logs"],
+  "Connect Team Member": ["Connect Team"],
   "Ministry Leader": ["Members", "Ministries", "Events", "Communication", "Sermons & Media"],
   "Finance Team": ["Finance & Giving", "Members", "Audit Logs"],
   "Media Team": ["Sermons & Media", "Communication", "Events"],

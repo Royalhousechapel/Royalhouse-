@@ -21,10 +21,21 @@ import type {
 
 import type {
   AdminProfile,
+  AssignConnectPersonRequest,
   Branch,
   BranchInput,
   BranchUpdate,
-  HealthStatus
+  ConnectAssignment,
+  ConnectFollowUp,
+  ConnectPerson,
+  ConnectPersonInput,
+  ConnectPersonProfile,
+  ConnectSummary,
+  HealthStatus,
+  ListConnectPeopleParams,
+  LogConnectInteractionRequest,
+  LogConnectInteractionResult,
+  WorkflowOption
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -498,5 +509,606 @@ export const useArchiveBranch = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getArchiveBranchMutationOptions(options));
+    }
+
+export const getListConnectWorkflowOptionsUrl = () => {
+
+
+
+
+  return `/api/admin/connect/options`
+}
+
+/**
+ * @summary List active Connect Team workflow options
+ */
+export const listConnectWorkflowOptions = async ( options?: Parameters<typeof customFetch>[1]): Promise<WorkflowOption[]> => {
+
+  return customFetch<WorkflowOption[]>(getListConnectWorkflowOptionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConnectWorkflowOptionsQueryKey = () => {
+    return [
+    `/api/admin/connect/options`
+    ] as const;
+    }
+
+
+export const getListConnectWorkflowOptionsQueryOptions = <TData = Awaited<ReturnType<typeof listConnectWorkflowOptions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnectWorkflowOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConnectWorkflowOptionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConnectWorkflowOptions>>> = ({ signal }) => listConnectWorkflowOptions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConnectWorkflowOptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConnectWorkflowOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof listConnectWorkflowOptions>>>
+export type ListConnectWorkflowOptionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active Connect Team workflow options
+ */
+
+export function useListConnectWorkflowOptions<TData = Awaited<ReturnType<typeof listConnectWorkflowOptions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnectWorkflowOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConnectWorkflowOptionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListConnectPeopleUrl = (params?: ListConnectPeopleParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/connect/people?${stringifiedParams}` : `/api/admin/connect/people`
+}
+
+/**
+ * @summary Search people in the Connect Team scope
+ */
+export const listConnectPeople = async (params?: ListConnectPeopleParams, options?: Parameters<typeof customFetch>[1]): Promise<ConnectPerson[]> => {
+
+  return customFetch<ConnectPerson[]>(getListConnectPeopleUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConnectPeopleQueryKey = (params?: ListConnectPeopleParams,) => {
+    return [
+    `/api/admin/connect/people`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListConnectPeopleQueryOptions = <TData = Awaited<ReturnType<typeof listConnectPeople>>, TError = ErrorType<unknown>>(params?: ListConnectPeopleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnectPeople>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConnectPeopleQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConnectPeople>>> = ({ signal }) => listConnectPeople(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConnectPeople>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConnectPeopleQueryResult = NonNullable<Awaited<ReturnType<typeof listConnectPeople>>>
+export type ListConnectPeopleQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Search people in the Connect Team scope
+ */
+
+export function useListConnectPeople<TData = Awaited<ReturnType<typeof listConnectPeople>>, TError = ErrorType<unknown>>(
+ params?: ListConnectPeopleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnectPeople>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConnectPeopleQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateConnectPersonUrl = () => {
+
+
+
+
+  return `/api/admin/connect/people`
+}
+
+/**
+ * @summary Create a visitor or member person record
+ */
+export const createConnectPerson = async (connectPersonInput: ConnectPersonInput, options?: Parameters<typeof customFetch>[1]): Promise<ConnectPerson> => {
+
+  return customFetch<ConnectPerson>(getCreateConnectPersonUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(connectPersonInput)
+  }
+);}
+
+
+
+
+
+export const getCreateConnectPersonMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConnectPerson>>, TError,{data: BodyType<ConnectPersonInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createConnectPerson>>, TError,{data: BodyType<ConnectPersonInput>}, TContext> => {
+
+const mutationKey = ['createConnectPerson'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createConnectPerson>>, {data: BodyType<ConnectPersonInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createConnectPerson(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateConnectPersonMutationResult = NonNullable<Awaited<ReturnType<typeof createConnectPerson>>>
+    export type CreateConnectPersonMutationBody = BodyType<ConnectPersonInput>
+    export type CreateConnectPersonMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a visitor or member person record
+ */
+export const useCreateConnectPerson = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConnectPerson>>, TError,{data: BodyType<ConnectPersonInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createConnectPerson>>,
+        TError,
+        {data: BodyType<ConnectPersonInput>},
+        TContext
+      > => {
+      return useMutation(getCreateConnectPersonMutationOptions(options));
+    }
+
+export const getGetConnectSummaryUrl = () => {
+
+
+
+
+  return `/api/admin/connect/summary`
+}
+
+/**
+ * @summary Get Connect Team workload summary
+ */
+export const getConnectSummary = async ( options?: Parameters<typeof customFetch>[1]): Promise<ConnectSummary> => {
+
+  return customFetch<ConnectSummary>(getGetConnectSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetConnectSummaryQueryKey = () => {
+    return [
+    `/api/admin/connect/summary`
+    ] as const;
+    }
+
+
+export const getGetConnectSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getConnectSummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConnectSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetConnectSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConnectSummary>>> = ({ signal }) => getConnectSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConnectSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetConnectSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getConnectSummary>>>
+export type GetConnectSummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get Connect Team workload summary
+ */
+
+export function useGetConnectSummary<TData = Awaited<ReturnType<typeof getConnectSummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConnectSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetConnectSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetConnectPersonProfileUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/connect/people/${id}`
+}
+
+/**
+ * @summary Get a person profile and interaction history
+ */
+export const getConnectPersonProfile = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ConnectPersonProfile> => {
+
+  return customFetch<ConnectPersonProfile>(getGetConnectPersonProfileUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetConnectPersonProfileQueryKey = (id: string,) => {
+    return [
+    `/api/admin/connect/people/${id}`
+    ] as const;
+    }
+
+
+export const getGetConnectPersonProfileQueryOptions = <TData = Awaited<ReturnType<typeof getConnectPersonProfile>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConnectPersonProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetConnectPersonProfileQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConnectPersonProfile>>> = ({ signal }) => getConnectPersonProfile(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConnectPersonProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetConnectPersonProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getConnectPersonProfile>>>
+export type GetConnectPersonProfileQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a person profile and interaction history
+ */
+
+export function useGetConnectPersonProfile<TData = Awaited<ReturnType<typeof getConnectPersonProfile>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConnectPersonProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetConnectPersonProfileQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAssignConnectPersonUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/connect/people/${id}/assign`
+}
+
+/**
+ * @summary Assign a person to a Connect Team member
+ */
+export const assignConnectPerson = async (id: string,
+    assignConnectPersonRequest: AssignConnectPersonRequest, options?: Parameters<typeof customFetch>[1]): Promise<ConnectAssignment> => {
+
+  return customFetch<ConnectAssignment>(getAssignConnectPersonUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assignConnectPersonRequest)
+  }
+);}
+
+
+
+
+
+export const getAssignConnectPersonMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignConnectPerson>>, TError,{id: string;data: BodyType<AssignConnectPersonRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof assignConnectPerson>>, TError,{id: string;data: BodyType<AssignConnectPersonRequest>}, TContext> => {
+
+const mutationKey = ['assignConnectPerson'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assignConnectPerson>>, {id: string;data: BodyType<AssignConnectPersonRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  assignConnectPerson(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssignConnectPersonMutationResult = NonNullable<Awaited<ReturnType<typeof assignConnectPerson>>>
+    export type AssignConnectPersonMutationBody = BodyType<AssignConnectPersonRequest>
+    export type AssignConnectPersonMutationError = ErrorType<void>
+
+    /**
+ * @summary Assign a person to a Connect Team member
+ */
+export const useAssignConnectPerson = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignConnectPerson>>, TError,{id: string;data: BodyType<AssignConnectPersonRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof assignConnectPerson>>,
+        TError,
+        {id: string;data: BodyType<AssignConnectPersonRequest>},
+        TContext
+      > => {
+      return useMutation(getAssignConnectPersonMutationOptions(options));
+    }
+
+export const getLogConnectInteractionUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/connect/people/${id}/interactions`
+}
+
+/**
+ * @summary Log a structured Connect Team interaction
+ */
+export const logConnectInteraction = async (id: string,
+    logConnectInteractionRequest: LogConnectInteractionRequest, options?: Parameters<typeof customFetch>[1]): Promise<LogConnectInteractionResult> => {
+
+  return customFetch<LogConnectInteractionResult>(getLogConnectInteractionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(logConnectInteractionRequest)
+  }
+);}
+
+
+
+
+
+export const getLogConnectInteractionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logConnectInteraction>>, TError,{id: string;data: BodyType<LogConnectInteractionRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logConnectInteraction>>, TError,{id: string;data: BodyType<LogConnectInteractionRequest>}, TContext> => {
+
+const mutationKey = ['logConnectInteraction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logConnectInteraction>>, {id: string;data: BodyType<LogConnectInteractionRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  logConnectInteraction(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogConnectInteractionMutationResult = NonNullable<Awaited<ReturnType<typeof logConnectInteraction>>>
+    export type LogConnectInteractionMutationBody = BodyType<LogConnectInteractionRequest>
+    export type LogConnectInteractionMutationError = ErrorType<void>
+
+    /**
+ * @summary Log a structured Connect Team interaction
+ */
+export const useLogConnectInteraction = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logConnectInteraction>>, TError,{id: string;data: BodyType<LogConnectInteractionRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof logConnectInteraction>>,
+        TError,
+        {id: string;data: BodyType<LogConnectInteractionRequest>},
+        TContext
+      > => {
+      return useMutation(getLogConnectInteractionMutationOptions(options));
+    }
+
+export const getCompleteConnectFollowUpUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/connect/follow-ups/${id}/complete`
+}
+
+/**
+ * @summary Mark a Connect Team follow-up complete
+ */
+export const completeConnectFollowUp = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ConnectFollowUp> => {
+
+  return customFetch<ConnectFollowUp>(getCompleteConnectFollowUpUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteConnectFollowUpMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeConnectFollowUp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeConnectFollowUp>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['completeConnectFollowUp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeConnectFollowUp>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  completeConnectFollowUp(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteConnectFollowUpMutationResult = NonNullable<Awaited<ReturnType<typeof completeConnectFollowUp>>>
+
+    export type CompleteConnectFollowUpMutationError = ErrorType<void>
+
+    /**
+ * @summary Mark a Connect Team follow-up complete
+ */
+export const useCompleteConnectFollowUp = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeConnectFollowUp>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeConnectFollowUp>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getCompleteConnectFollowUpMutationOptions(options));
     }
 

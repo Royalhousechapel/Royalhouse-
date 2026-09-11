@@ -30,10 +30,11 @@ A mobile-first member experience for Royalhouse Chapel Worldwide, bringing minis
 
 ## Architecture decisions
 
-- The first mobile build is local-first with AsyncStorage for member actions, allowing a complete Expo Go experience before backend modules are connected.
+- The first release uses Expo Go for the mobile experience and PostgreSQL/API persistence as the shared source of truth for branches, people, Connect Team assignments, interactions, follow-ups, workflow options, and audit records.
+- Replit-managed Clerk provides authentication. Expo sends Clerk bearer tokens to the API, and role/module permissions are enforced server-side; mobile visibility is not an authorization boundary.
 - Royal blue and royal gold are the primary brand signals, derived from the supplied payment reference and the supplied Victory Center logo.
 - The mobile experience is organized around daily member behavior: listen, give, pray, attend, find a ministry, and manage a member profile.
-- The shared API workspace remains the future synchronization layer for the website, admin portal, and mobile client.
+- The shared OpenAPI contract and generated React Query/Zod clients synchronize the website, admin portal, and mobile client.
 
 ## Product
 
@@ -46,7 +47,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 ## Gotchas
 
 - Use the artifact-managed Expo workflow for previews so Expo Go receives the correct host configuration.
-- The first build intentionally uses local persistence for giving and prayer submissions; secure payment processing and server-backed auth are future integration work.
+- Giving and prayer flows still include local-first member actions, while administrative identity and Connect Team workflows are server-backed.
+- Connect Team workflow choices remain configurable records with trigger configuration; do not hard-code the final outcome list in the mobile UI.
 
 ## Pointers
 

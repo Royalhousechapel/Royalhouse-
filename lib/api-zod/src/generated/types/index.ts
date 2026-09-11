@@ -7,7 +7,20 @@
  */
 
 export * from './adminProfile';
+export * from './assignConnectPersonRequest';
 export * from './branch';
 export * from './branchInput';
 export * from './branchUpdate';
+export * from './connectAssignment';
+export * from './connectFollowUp';
+export * from './connectInteraction';
+export * from './connectPerson';
+export * from './connectPersonInput';
+export * from './connectPersonProfile';
+export * from './connectSummary';
 export * from './healthStatus';
+export * from './listConnectPeopleParams';
+export * from './logConnectInteractionRequest';
+export * from './logConnectInteractionResult';
+export * from './workflowOption';
+export * from './workflowOptionTriggerConfig';
