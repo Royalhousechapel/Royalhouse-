@@ -944,7 +944,7 @@ const styles = StyleSheet.create({
   onlineText: { color: '#2B8A4B', fontSize: 11, fontWeight: '700' },
   heroCard: { marginHorizontal: 16, minHeight: 268, borderRadius: 18, overflow: 'hidden', justifyContent: 'flex-end' },
   heroImage: { borderRadius: 18 },
-  heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(9, 18, 49, 0.63)' },
+  heroOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(9, 18, 49, 0.63)' },
   heroContent: { padding: 20 },
   liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#E0BC2A' },
