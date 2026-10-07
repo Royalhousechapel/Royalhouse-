@@ -7,6 +7,11 @@
  */
 
 export * from './adminProfile';
+export * from './adminUser';
+export * from './adminUserGrant';
+export * from './adminUserList';
+export * from './adminUserRole';
+export * from './adminUserUpdate';
 export * from './assignConnectPersonRequest';
 export * from './branch';
 export * from './branchInput';

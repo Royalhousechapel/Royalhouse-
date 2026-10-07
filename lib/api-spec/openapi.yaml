@@ -60,6 +60,87 @@ paths:
           description: Authentication required
         "403":
           description: Authenticated account has no active admin assignment
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List administrator assignments
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Administrator assignments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserList"
+        "401":
+          description: Authentication required
+        "403":
+          description: Super Admin access required
+    post:
+      operationId: grantAdminAccess
+      tags: [admin]
+      summary: Grant or update access for a verified Clerk account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserGrant"
+      responses:
+        "201":
+          description: Administrator access granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: Invalid request
+        "401":
+          description: Authentication required
+        "403":
+          description: Super Admin access required
+        "404":
+          description: No verified Clerk account found for this email
+  /admin/users/{clerkUserId}:
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Change an administrator's role or revoke access
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clerkUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserUpdate"
+      responses:
+        "200":
+          description: Administrator assignment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: Invalid request
+        "401":
+          description: Authentication required
+        "403":
+          description: Super Admin access required
+        "404":
+          description: Administrator assignment not found
+        "409":
+          description: Cannot remove or demote the last active Super Admin
   /admin/branches:
     post:
       operationId: createBranch
@@ -392,6 +473,62 @@ components:
         modules:
           type: array
           items: { type: string }
+    AdminUserRole:
+      type: string
+      enum:
+        - Super Admin
+        - Headquarters Admin
+        - Regional Admin
+        - Branch Admin
+        - Pastor
+        - Pastoral Leadership
+        - Church Administrator
+        - Connect Team Leader
+        - Connect Team Member
+        - Ministry Leader
+        - Finance Team
+        - Media Team
+        - Store Manager
+        - Finance Administrator
+        - Finance Team Member
+        - Foundation School Administrator
+        - Foundation School Team Member
+        - Ministries Administrator
+        - Media Administrator
+        - Media Team Member
+        - Events Administrator
+        - Events Team Member
+        - Communications Administrator
+        - Membership Administrator
+        - Branch Administrator
+    AdminUser:
+      type: object
+      required: [clerkUserId, role, active]
+      properties:
+        clerkUserId: { type: string }
+        email: { type: ["string", "null"] }
+        fullName: { type: ["string", "null"] }
+        role: { $ref: "#/components/schemas/AdminUserRole" }
+        active: { type: boolean }
+    AdminUserList:
+      type: array
+      items:
+        $ref: "#/components/schemas/AdminUser"
+    AdminUserGrant:
+      type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          minLength: 3
+          pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+        role: { $ref: "#/components/schemas/AdminUserRole" }
+    AdminUserUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        role: { $ref: "#/components/schemas/AdminUserRole" }
+        active: { type: boolean }
     ConnectPerson:
       type: object
       required: [id, personType, fullName, visitorStatus, membershipStatus, foundationSchoolStatus, pastoralFollowUp, tags, createdAt, updatedAt]

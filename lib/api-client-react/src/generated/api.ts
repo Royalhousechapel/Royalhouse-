@@ -21,6 +21,10 @@ import type {
 
 import type {
   AdminProfile,
+  AdminUser,
+  AdminUserGrant,
+  AdminUserList,
+  AdminUserUpdate,
   AssignConnectPersonRequest,
   Branch,
   BranchInput,
@@ -296,6 +300,226 @@ export function useGetAdminProfile<TData = Awaited<ReturnType<typeof getAdminPro
 
 
 
+
+export const getListAdminUsersUrl = () => {
+
+
+
+
+  return `/api/admin/users`
+}
+
+/**
+ * @summary List administrator assignments
+ */
+export const listAdminUsers = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminUserList> => {
+
+  return customFetch<AdminUserList>(getListAdminUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminUsersQueryKey = () => {
+    return [
+    `/api/admin/users`
+    ] as const;
+    }
+
+
+export const getListAdminUsersQueryOptions = <TData = Awaited<ReturnType<typeof listAdminUsers>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminUsersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminUsers>>> = ({ signal }) => listAdminUsers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminUsers>>>
+export type ListAdminUsersQueryError = ErrorType<void>
+
+
+/**
+ * @summary List administrator assignments
+ */
+
+export function useListAdminUsers<TData = Awaited<ReturnType<typeof listAdminUsers>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminUsersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGrantAdminAccessUrl = () => {
+
+
+
+
+  return `/api/admin/users`
+}
+
+/**
+ * @summary Grant or update access for a verified Clerk account
+ */
+export const grantAdminAccess = async (adminUserGrant: AdminUserGrant, options?: Parameters<typeof customFetch>[1]): Promise<AdminUser> => {
+
+  return customFetch<AdminUser>(getGrantAdminAccessUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminUserGrant)
+  }
+);}
+
+
+
+
+
+export const getGrantAdminAccessMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof grantAdminAccess>>, TError,{data: BodyType<AdminUserGrant>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof grantAdminAccess>>, TError,{data: BodyType<AdminUserGrant>}, TContext> => {
+
+const mutationKey = ['grantAdminAccess'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof grantAdminAccess>>, {data: BodyType<AdminUserGrant>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  grantAdminAccess(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GrantAdminAccessMutationResult = NonNullable<Awaited<ReturnType<typeof grantAdminAccess>>>
+    export type GrantAdminAccessMutationBody = BodyType<AdminUserGrant>
+    export type GrantAdminAccessMutationError = ErrorType<void>
+
+    /**
+ * @summary Grant or update access for a verified Clerk account
+ */
+export const useGrantAdminAccess = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof grantAdminAccess>>, TError,{data: BodyType<AdminUserGrant>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof grantAdminAccess>>,
+        TError,
+        {data: BodyType<AdminUserGrant>},
+        TContext
+      > => {
+      return useMutation(getGrantAdminAccessMutationOptions(options));
+    }
+
+export const getUpdateAdminUserUrl = (clerkUserId: string,) => {
+
+
+
+
+  return `/api/admin/users/${clerkUserId}`
+}
+
+/**
+ * @summary Change an administrator's role or revoke access
+ */
+export const updateAdminUser = async (clerkUserId: string,
+    adminUserUpdate: AdminUserUpdate, options?: Parameters<typeof customFetch>[1]): Promise<AdminUser> => {
+
+  return customFetch<AdminUser>(getUpdateAdminUserUrl(clerkUserId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminUserUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminUserMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUser>>, TError,{clerkUserId: string;data: BodyType<AdminUserUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminUser>>, TError,{clerkUserId: string;data: BodyType<AdminUserUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminUser>>, {clerkUserId: string;data: BodyType<AdminUserUpdate>}> = (props) => {
+          const {clerkUserId,data} = props ?? {};
+
+          return  updateAdminUser(clerkUserId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminUserMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminUser>>>
+    export type UpdateAdminUserMutationBody = BodyType<AdminUserUpdate>
+    export type UpdateAdminUserMutationError = ErrorType<void>
+
+    /**
+ * @summary Change an administrator's role or revoke access
+ */
+export const useUpdateAdminUser = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUser>>, TError,{clerkUserId: string;data: BodyType<AdminUserUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminUser>>,
+        TError,
+        {clerkUserId: string;data: BodyType<AdminUserUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminUserMutationOptions(options));
+    }
 
 export const getCreateBranchUrl = () => {
 

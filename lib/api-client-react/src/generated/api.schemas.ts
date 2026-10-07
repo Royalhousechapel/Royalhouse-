@@ -70,6 +70,63 @@ export interface AdminProfile {
   modules: string[];
 }
 
+export type AdminUserRole = typeof AdminUserRole[keyof typeof AdminUserRole];
+
+
+export const AdminUserRole = {
+  Super_Admin: 'Super Admin',
+  Headquarters_Admin: 'Headquarters Admin',
+  Regional_Admin: 'Regional Admin',
+  Branch_Admin: 'Branch Admin',
+  Pastor: 'Pastor',
+  Pastoral_Leadership: 'Pastoral Leadership',
+  Church_Administrator: 'Church Administrator',
+  Connect_Team_Leader: 'Connect Team Leader',
+  Connect_Team_Member: 'Connect Team Member',
+  Ministry_Leader: 'Ministry Leader',
+  Finance_Team: 'Finance Team',
+  Media_Team: 'Media Team',
+  Store_Manager: 'Store Manager',
+  Finance_Administrator: 'Finance Administrator',
+  Finance_Team_Member: 'Finance Team Member',
+  Foundation_School_Administrator: 'Foundation School Administrator',
+  Foundation_School_Team_Member: 'Foundation School Team Member',
+  Ministries_Administrator: 'Ministries Administrator',
+  Media_Administrator: 'Media Administrator',
+  Media_Team_Member: 'Media Team Member',
+  Events_Administrator: 'Events Administrator',
+  Events_Team_Member: 'Events Team Member',
+  Communications_Administrator: 'Communications Administrator',
+  Membership_Administrator: 'Membership Administrator',
+  Branch_Administrator: 'Branch Administrator',
+} as const;
+
+export interface AdminUser {
+  clerkUserId: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  fullName?: string | null;
+  role: AdminUserRole;
+  active: boolean;
+}
+
+export type AdminUserList = AdminUser[];
+
+export interface AdminUserGrant {
+  /**
+     * @minLength 3
+     * @pattern ^[^\s@]+@[^\s@]+\.[^\s@]+$
+     */
+  email: string;
+  role: AdminUserRole;
+}
+
+export interface AdminUserUpdate {
+  role?: AdminUserRole;
+  active?: boolean;
+}
+
 export interface ConnectPerson {
   id: string;
   /** @nullable */

@@ -50,6 +50,63 @@ export const GetAdminProfileResponse = zod.object({
 
 
 /**
+ * @summary List administrator assignments
+ */
+export const ListAdminUsersResponseItem = zod.object({
+  "clerkUserId": zod.string(),
+  "email": zod.string().nullish(),
+  "fullName": zod.string().nullish(),
+  "role": zod.enum(['Super Admin', 'Headquarters Admin', 'Regional Admin', 'Branch Admin', 'Pastor', 'Pastoral Leadership', 'Church Administrator', 'Connect Team Leader', 'Connect Team Member', 'Ministry Leader', 'Finance Team', 'Media Team', 'Store Manager', 'Finance Administrator', 'Finance Team Member', 'Foundation School Administrator', 'Foundation School Team Member', 'Ministries Administrator', 'Media Administrator', 'Media Team Member', 'Events Administrator', 'Events Team Member', 'Communications Administrator', 'Membership Administrator', 'Branch Administrator']),
+  "active": zod.boolean()
+})
+export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem)
+
+
+/**
+ * @summary Grant or update access for a verified Clerk account
+ */
+export const grantAdminAccessBodyEmailMin = 3;
+
+
+export const grantAdminAccessBodyEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+
+
+export const GrantAdminAccessBody = zod.object({
+  "email": zod.string().min(grantAdminAccessBodyEmailMin).regex(grantAdminAccessBodyEmailRegExp),
+  "role": zod.enum(['Super Admin', 'Headquarters Admin', 'Regional Admin', 'Branch Admin', 'Pastor', 'Pastoral Leadership', 'Church Administrator', 'Connect Team Leader', 'Connect Team Member', 'Ministry Leader', 'Finance Team', 'Media Team', 'Store Manager', 'Finance Administrator', 'Finance Team Member', 'Foundation School Administrator', 'Foundation School Team Member', 'Ministries Administrator', 'Media Administrator', 'Media Team Member', 'Events Administrator', 'Events Team Member', 'Communications Administrator', 'Membership Administrator', 'Branch Administrator'])
+})
+
+export const GrantAdminAccessResponse = zod.object({
+  "clerkUserId": zod.string(),
+  "email": zod.string().nullish(),
+  "fullName": zod.string().nullish(),
+  "role": zod.enum(['Super Admin', 'Headquarters Admin', 'Regional Admin', 'Branch Admin', 'Pastor', 'Pastoral Leadership', 'Church Administrator', 'Connect Team Leader', 'Connect Team Member', 'Ministry Leader', 'Finance Team', 'Media Team', 'Store Manager', 'Finance Administrator', 'Finance Team Member', 'Foundation School Administrator', 'Foundation School Team Member', 'Ministries Administrator', 'Media Administrator', 'Media Team Member', 'Events Administrator', 'Events Team Member', 'Communications Administrator', 'Membership Administrator', 'Branch Administrator']),
+  "active": zod.boolean()
+})
+
+
+/**
+ * @summary Change an administrator's role or revoke access
+ */
+export const UpdateAdminUserParams = zod.object({
+  "clerkUserId": zod.coerce.string()
+})
+
+export const UpdateAdminUserBody = zod.object({
+  "role": zod.enum(['Super Admin', 'Headquarters Admin', 'Regional Admin', 'Branch Admin', 'Pastor', 'Pastoral Leadership', 'Church Administrator', 'Connect Team Leader', 'Connect Team Member', 'Ministry Leader', 'Finance Team', 'Media Team', 'Store Manager', 'Finance Administrator', 'Finance Team Member', 'Foundation School Administrator', 'Foundation School Team Member', 'Ministries Administrator', 'Media Administrator', 'Media Team Member', 'Events Administrator', 'Events Team Member', 'Communications Administrator', 'Membership Administrator', 'Branch Administrator']).optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateAdminUserResponse = zod.object({
+  "clerkUserId": zod.string(),
+  "email": zod.string().nullish(),
+  "fullName": zod.string().nullish(),
+  "role": zod.enum(['Super Admin', 'Headquarters Admin', 'Regional Admin', 'Branch Admin', 'Pastor', 'Pastoral Leadership', 'Church Administrator', 'Connect Team Leader', 'Connect Team Member', 'Ministry Leader', 'Finance Team', 'Media Team', 'Store Manager', 'Finance Administrator', 'Finance Team Member', 'Foundation School Administrator', 'Foundation School Team Member', 'Ministries Administrator', 'Media Administrator', 'Media Team Member', 'Events Administrator', 'Events Team Member', 'Communications Administrator', 'Membership Administrator', 'Branch Administrator']),
+  "active": zod.boolean()
+})
+
+
+/**
  * @summary Create a branch
  */
 

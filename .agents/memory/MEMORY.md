@@ -1,3 +1,3 @@
-- [OpenAPI UUID compatibility](openapi-codegen.md) — keep UUID fields as plain strings when this workspace uses Zod 3; generated `zod.uuid()` is unavailable.
+- [OpenAPI and Zod 3 codegen](openapi-codegen.md) — avoid generated UUID/email helpers unsupported by this workspace's Zod 3 runtime.
 - [Expo SDK upgrade constraints](expo-sdk-upgrades.md) — SDK upgrades may need a narrow pnpm age-policy exception and SDK-specific Router/TypeScript compatibility fixes.
 - [Private Expo preview limit](expo-private-preview.md) — native Expo Go previews are unavailable for this private mobile artifact; use the browser preview or a supported native test setup.
