@@ -37,6 +37,7 @@ import {
   useLogConnectInteraction,
   useListBranches,
   useUpdateBranch,
+  setPreviewRoleGetter,
 } from '@workspace/api-client-react';
 import type { Branch as ApiBranch, ConnectPerson, WorkflowOption } from '@workspace/api-client-react';
 
@@ -68,10 +69,32 @@ const ministryData = [
 ];
 
 const givingCategories = ['Tithes', 'Offerings', 'First Fruits', 'Faith Seed', 'Building', 'Missions', 'Welfare', 'Royal Ladies'];
-type AdminRole = 'Super Admin' | 'Headquarters Admin' | 'Regional Admin' | 'Branch Admin' | 'Pastor' | 'Ministry Leader' | 'Finance Team' | 'Media Team' | 'Store Manager' | 'Connect Team Leader' | 'Connect Team Member' | 'Pastoral Leadership' | 'Church Administrator';
+type AdminRole = 'Super Admin' | 'Headquarters Admin' | 'Regional Admin' | 'Branch Admin' | 'Pastor' | 'Ministry Leader' | 'Finance Team' | 'Media Team' | 'Store Manager' | 'Connect Team Leader' | 'Connect Team Member' | 'Pastoral Leadership' | 'Church Administrator' | 'Finance Administrator' | 'Finance Team Member' | 'Foundation School Administrator' | 'Foundation School Team Member' | 'Ministries Administrator' | 'Media Administrator' | 'Media Team Member' | 'Events Administrator' | 'Events Team Member' | 'Communications Administrator' | 'Membership Administrator' | 'Branch Administrator' | 'Regular Member' | 'Visitor';
 type AdminModule = 'Members' | 'Connect Team' | 'Branches' | 'Ministries' | 'Sermons & Media' | 'Events' | 'Finance & Giving' | 'Communication' | 'Digital Store' | 'Users & Roles' | 'Settings' | 'Audit Logs';
 
-const adminRoles: AdminRole[] = ['Super Admin', 'Headquarters Admin', 'Regional Admin', 'Branch Admin', 'Pastor', 'Ministry Leader', 'Finance Team', 'Media Team', 'Store Manager', 'Connect Team Leader', 'Connect Team Member', 'Pastoral Leadership', 'Church Administrator'];
+type PreviewRoleOption = { department: string; role: AdminRole; icon: IconName };
+const previewRoleOptions: PreviewRoleOption[] = [
+  { department: 'Leadership', role: 'Super Admin', icon: 'shield-checkmark-outline' },
+  { department: 'Leadership', role: 'Pastoral Leadership', icon: 'people-outline' },
+  { department: 'Leadership', role: 'Church Administrator', icon: 'briefcase-outline' },
+  { department: 'Connect Team', role: 'Connect Team Leader', icon: 'call-outline' },
+  { department: 'Connect Team', role: 'Connect Team Member', icon: 'call-outline' },
+  { department: 'Finance', role: 'Finance Administrator', icon: 'card-outline' },
+  { department: 'Finance', role: 'Finance Team Member', icon: 'card-outline' },
+  { department: 'Foundation School', role: 'Foundation School Administrator', icon: 'school-outline' },
+  { department: 'Foundation School', role: 'Foundation School Team Member', icon: 'school-outline' },
+  { department: 'Ministries', role: 'Ministry Leader', icon: 'people-outline' },
+  { department: 'Ministries', role: 'Ministries Administrator', icon: 'briefcase-outline' },
+  { department: 'Media', role: 'Media Administrator', icon: 'play-circle-outline' },
+  { department: 'Media', role: 'Media Team Member', icon: 'play-circle-outline' },
+  { department: 'Events', role: 'Events Administrator', icon: 'calendar-outline' },
+  { department: 'Events', role: 'Events Team Member', icon: 'calendar-outline' },
+  { department: 'Communications', role: 'Communications Administrator', icon: 'chatbubbles-outline' },
+  { department: 'Membership', role: 'Membership Administrator', icon: 'people-outline' },
+  { department: 'Branch Administration', role: 'Branch Administrator', icon: 'location-outline' },
+  { department: 'Member', role: 'Regular Member', icon: 'person-outline' },
+  { department: 'Visitor', role: 'Visitor', icon: 'walk-outline' },
+];
 const moduleIcons: Record<AdminModule, IconName> = {
   Members: 'people-outline',
   'Connect Team': 'call-outline',
@@ -100,6 +123,20 @@ const modulePermissions: Record<AdminRole, AdminModule[]> = {
   'Connect Team Member': ['Connect Team'],
   'Pastoral Leadership': ['Members', 'Connect Team', 'Communication', 'Audit Logs'],
   'Church Administrator': ['Members', 'Connect Team', 'Branches', 'Ministries', 'Events', 'Communication', 'Audit Logs'],
+  'Finance Administrator': ['Finance & Giving', 'Members', 'Audit Logs'],
+  'Finance Team Member': ['Finance & Giving'],
+  'Foundation School Administrator': ['Members', 'Ministries', 'Events', 'Communication'],
+  'Foundation School Team Member': ['Members', 'Events'],
+  'Ministries Administrator': ['Members', 'Ministries', 'Events', 'Communication'],
+  'Media Administrator': ['Sermons & Media', 'Communication', 'Events'],
+  'Media Team Member': ['Sermons & Media'],
+  'Events Administrator': ['Events', 'Communication'],
+  'Events Team Member': ['Events'],
+  'Communications Administrator': ['Communication', 'Events'],
+  'Membership Administrator': ['Members', 'Communication'],
+  'Branch Administrator': ['Branches', 'Members', 'Events'],
+  'Regular Member': [],
+  Visitor: [],
 };
 
 type Branch = {
@@ -557,19 +594,30 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
   const updateBranchMutation = useUpdateBranch();
   const archiveBranchMutation = useArchiveBranch();
   const role = adminProfile.data?.role as AdminRole | undefined;
+  const [previewRole, setPreviewRole] = useState<AdminRole | null>(null);
+  const [showPreviewPicker, setShowPreviewPicker] = useState(false);
+  const [previewSearch, setPreviewSearch] = useState('');
+  const effectiveRole = previewRole ?? role;
+  useEffect(() => {
+    setPreviewRoleGetter(() => previewRole);
+    void queryClient.invalidateQueries();
+    return () => setPreviewRoleGetter(null);
+  }, [previewRole, queryClient]);
   const connectSummary = useGetConnectSummary({
     query: {
       queryKey: getGetConnectSummaryQueryKey(),
-      enabled: Boolean(role && modulePermissions[role]?.includes('Connect Team')),
+      enabled: Boolean(effectiveRole && modulePermissions[effectiveRole]?.includes('Connect Team')),
     },
   });
   const [activeModule, setActiveModule] = useState<AdminModule | 'Overview'>('Overview');
-  const [showRolePicker, setShowRolePicker] = useState(false);
   const [showBranchForm, setShowBranchForm] = useState(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const [branchForm, setBranchForm] = useState({ name: '', country: 'United States', region: '', city: '', address: '' });
   const branches = branchQuery.data?.map(apiBranchToBranch) ?? [];
-  const permittedModules = role ? modulePermissions[role] : [];
+  const permittedModules = effectiveRole ? modulePermissions[effectiveRole] : [];
+  const visiblePreviewRoles = previewRoleOptions.filter((option) =>
+    `${option.department} ${option.role}`.toLowerCase().includes(previewSearch.trim().toLowerCase()),
+  );
   const activeBranches = branches.filter((branch) => !branch.archived);
   const openAddBranch = () => {
     setEditingBranch(null);
@@ -651,7 +699,7 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
       openAddBranch();
       return;
     }
-    Alert.alert(label, `${label} is ready for the ${role ?? 'administrator'} workspace.`);
+    Alert.alert(label, `${label} is ready for the ${effectiveRole ?? 'administrator'} workspace.`);
   };
   if (!isSignedIn) {
     return <View style={[styles.accessState, { backgroundColor: colors.background }]}><View style={[styles.accessIcon, { backgroundColor: colors.primary }]}><Ionicons name="lock-closed" size={27} color={colors.accent} /></View><Text style={[styles.accessTitle, { color: colors.foreground }]}>Admin sign-in required</Text><Text style={[styles.accessBody, { color: colors.mutedForeground }]}>Sign in with your Royalhouse account before opening the administration workspace.</Text><ActionButton label="Sign in" icon="log-in-outline" variant="gold" onPress={() => router.replace('/sign-in' as never)} /><ActionButton label="Close" variant="ghost" onPress={close} /></View>;
@@ -664,29 +712,30 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
   }
   const dashboardContent = (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.scrollContent, { paddingTop: 24 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-      <View style={styles.adminHeader}>
-        <View style={styles.adminHeaderCopy}><Text style={[styles.eyebrow, { color: colors.accent }]}>ROYALHOUSE CMS</Text><Text style={[styles.adminTitle, { color: colors.foreground }]}>Command center</Text><Text style={[styles.adminSubtitle, { color: colors.mutedForeground }]}>Manage the digital kingdom with clarity.</Text></View>
+      {previewRole ? <View style={[styles.previewBanner, { backgroundColor: '#FFF6D6', borderColor: colors.accent }]}><View style={styles.previewBannerCopy}><Text style={[styles.previewBannerLabel, { color: colors.accent }]}>PREVIEW MODE</Text><Text style={[styles.previewBannerRole, { color: colors.foreground }]}>Viewing as {previewRole}</Text></View><Pressable onPress={() => { setPreviewRole(null); setActiveModule('Overview'); }} style={[styles.exitPreviewButton, { backgroundColor: colors.primary }]}><Text style={styles.exitPreviewText}>EXIT PREVIEW</Text></Pressable></View> : null}
+       <View style={styles.adminHeader}>
+         <View style={styles.adminHeaderCopy}><Text style={[styles.eyebrow, { color: colors.accent }]}>{previewRole ? `${previewRole.toUpperCase()} PREVIEW` : 'ROYALHOUSE CMS'}</Text><Text style={[styles.adminTitle, { color: colors.foreground }]}>{previewRole ? `${previewRole} view` : 'Command center'}</Text><Text style={[styles.adminSubtitle, { color: colors.mutedForeground }]}>{previewRole ? 'Navigation and API access are limited to this role.' : 'Manage the digital kingdom with clarity.'}</Text></View>
         <Pressable onPress={close} style={styles.adminClose}><Ionicons name="close" size={20} color={colors.foreground} /></Pressable>
       </View>
-      <View style={[styles.roleSelector, { backgroundColor: colors.primary }]}>
+      <Pressable disabled={role !== 'Super Admin'} onPress={() => setShowPreviewPicker(true)} style={[styles.roleSelector, { backgroundColor: colors.primary }, role !== 'Super Admin' && { opacity: 0.9 }]}>
         <View style={styles.roleSelectorIcon}><Ionicons name="shield-checkmark" size={17} color={colors.accent} /></View>
-        <View style={styles.roleSelectorCopy}><Text style={styles.roleSelectorLabel}>VIEWING AS</Text><Text style={styles.roleSelectorValue}>{role}</Text></View>
-        <Ionicons name="checkmark-circle" size={18} color={colors.accent} />
-      </View>
+        <View style={styles.roleSelectorCopy}><Text style={styles.roleSelectorLabel}>{previewRole ? 'PREVIEWING AS' : 'VIEWING AS'}</Text><Text style={styles.roleSelectorValue}>{effectiveRole}</Text></View>
+        <Ionicons name={role === 'Super Admin' ? 'chevron-down' : 'checkmark-circle'} size={18} color={colors.accent} />
+      </Pressable>
 
-      <View style={styles.adminStatsGrid}>
+      {!previewRole ? <View style={styles.adminStatsGrid}>
         <AdminStat label="People in Connect" value={connectSummary.data ? String(connectSummary.data.peopleCount) : '—'} trend={connectSummary.data ? `${connectSummary.data.pendingFollowUps} follow-ups` : 'Loading'} icon="people-outline" />
         <AdminStat label="Branches" value={String(activeBranches.length)} trend="+2 this year" icon="location-outline" />
         <AdminStat label="Countries" value={String(new Set(activeBranches.map((branch) => branch.country)).size).padStart(2, '0')} trend="From directory" icon="globe-outline" />
         <AdminStat label="Giving this month" value="—" trend="Finance module" icon="trending-up-outline" />
-      </View>
+      </View> : null}
 
       <SectionHeader title={activeModule === 'Overview' ? 'Workspace modules' : copy?.title ?? ''} action={activeModule !== 'Overview' ? 'Overview' : undefined} onPress={() => setActiveModule('Overview')} />
       {activeModule === 'Overview' ? (
         <>
-          <View style={styles.moduleGrid}>{permittedModules.map((module) => <Pressable key={module} onPress={() => setActiveModule(module)} style={({ pressed }) => [styles.moduleCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}><View style={[styles.moduleIcon, { backgroundColor: '#F8F1D7' }]}><Ionicons name={moduleIcons[module]} size={20} color={colors.accent} /></View><Text style={[styles.moduleName, { color: colors.foreground }]}>{module}</Text><Ionicons name="arrow-forward" size={14} color={colors.mutedForeground} /></Pressable>)}</View>
-          <SectionHeader title="Recent activity" action="View audit log" onPress={() => permittedModules.includes('Audit Logs') ? setActiveModule('Audit Logs') : Alert.alert('Permission required', 'Your current role cannot view audit logs.')} />
-          <View style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.border }]}><AdminActivity icon="location-outline" title="Branch directory updated" detail="International Headquarters profile reviewed" time="12 min ago" /><AdminActivity icon="heart-outline" title="New giving received" detail="$250 · Building project" time="1 hr ago" /><AdminActivity icon="calendar-outline" title="Event registration opened" detail="Global Worship Service" time="3 hrs ago" /><AdminActivity icon="person-add-outline" title="New member registration" detail="Victory Center · United States" time="Yesterday" /></View>
+          {permittedModules.length > 0 ? <View style={styles.moduleGrid}>{permittedModules.map((module) => <Pressable key={module} onPress={() => setActiveModule(module)} style={({ pressed }) => [styles.moduleCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}><View style={[styles.moduleIcon, { backgroundColor: '#F8F1D7' }]}><Ionicons name={moduleIcons[module]} size={20} color={colors.accent} /></View><Text style={[styles.moduleName, { color: colors.foreground }]}>{module}</Text><Ionicons name="arrow-forward" size={14} color={colors.mutedForeground} /></Pressable>)}</View> : <View style={[styles.moduleEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}><Ionicons name={previewRole === 'Visitor' ? 'walk-outline' : 'person-outline'} size={28} color={colors.accent} /><Text style={[styles.moduleEmptyTitle, { color: colors.foreground }]}>{previewRole === 'Visitor' ? 'Visitor-facing view' : 'Member-facing view'}</Text><Text style={[styles.moduleEmptyBody, { color: colors.mutedForeground }]}>This preview contains no administration modules. Exit preview to return to the Super Admin command center.</Text></View>}
+          {!previewRole ? <><SectionHeader title="Recent activity" action="View audit log" onPress={() => permittedModules.includes('Audit Logs') ? setActiveModule('Audit Logs') : Alert.alert('Permission required', 'Your current role cannot view audit logs.')} />
+          <View style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.border }]}><AdminActivity icon="location-outline" title="Branch directory updated" detail="International Headquarters profile reviewed" time="12 min ago" /><AdminActivity icon="heart-outline" title="New giving received" detail="$250 · Building project" time="1 hr ago" /><AdminActivity icon="calendar-outline" title="Event registration opened" detail="Global Worship Service" time="3 hrs ago" /><AdminActivity icon="person-add-outline" title="New member registration" detail="Victory Center · United States" time="Yesterday" /></View></> : null}
         </>
       ) : (
         <>
@@ -697,7 +746,8 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
     </ScrollView>
   );
   const branchFormModal = <Modal animationType="slide" transparent visible={showBranchForm} onRequestClose={() => setShowBranchForm(false)}><View style={styles.formBackdrop}><View style={[styles.formSheet, { backgroundColor: colors.card }]}><View style={styles.formHeader}><View><Text style={[styles.eyebrow, { color: colors.accent }]}>BRANCH MANAGEMENT</Text><Text style={[styles.formTitle, { color: colors.foreground }]}>{editingBranch ? 'Edit branch' : 'Add branch'}</Text></View><Pressable onPress={() => setShowBranchForm(false)} hitSlop={12}><Ionicons name="close" size={22} color={colors.foreground} /></Pressable></View>{(['name', 'city', 'region', 'address'] as const).map((field) => <View key={field}><Text style={[styles.formLabel, { color: colors.foreground }]}>{field === 'name' ? 'Branch name' : field.charAt(0).toUpperCase() + field.slice(1)}</Text><TextInput value={branchForm[field]} onChangeText={(value) => setBranchForm((current) => ({ ...current, [field]: value }))} placeholder={field === 'name' ? 'e.g. Royalhouse Chapel Virginia' : `Enter ${field}`} placeholderTextColor={colors.mutedForeground} style={[styles.formInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]} /></View>)}<Text style={[styles.formLabel, { color: colors.foreground }]}>Country</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.formCountryRow}>{['United States', 'Ghana', 'Canada'].map((item) => <Pressable key={item} onPress={() => setBranchForm((current) => ({ ...current, country: item }))} style={[styles.formCountry, { backgroundColor: branchForm.country === item ? colors.accent : colors.background, borderColor: branchForm.country === item ? colors.accent : colors.border }]}><Text style={[styles.formCountryText, { color: branchForm.country === item ? '#FFFFFF' : colors.foreground }]}>{item}</Text></Pressable>)}</ScrollView><ActionButton label={editingBranch ? 'Save branch changes' : 'Add branch to directory'} icon="checkmark-circle-outline" variant="gold" full onPress={saveBranch} /></View></View></Modal>;
-  return standalone ? <>{dashboardContent}{branchFormModal}</> : <Modal animationType="slide" visible onRequestClose={close}><>{dashboardContent}{branchFormModal}</></Modal>;
+  const previewPickerModal = <Modal animationType="slide" transparent visible={showPreviewPicker} onRequestClose={() => setShowPreviewPicker(false)}><View style={styles.formBackdrop}><View style={[styles.previewSheet, { backgroundColor: colors.card }]}><View style={styles.formHeader}><View><Text style={[styles.eyebrow, { color: colors.accent }]}>SUPER ADMIN TOOL</Text><Text style={[styles.formTitle, { color: colors.foreground }]}>View As</Text></View><Pressable onPress={() => setShowPreviewPicker(false)} hitSlop={12}><Ionicons name="close" size={22} color={colors.foreground} /></Pressable></View><TextInput value={previewSearch} onChangeText={setPreviewSearch} placeholder="Search departments or roles" placeholderTextColor={colors.mutedForeground} style={[styles.formInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]} />{Array.from(new Set(visiblePreviewRoles.map((option) => option.department))).map((department) => <View key={department}><Text style={[styles.previewDepartment, { color: colors.accent }]}>{department}</Text>{visiblePreviewRoles.filter((option) => option.department === department).map((option) => <Pressable key={option.role} onPress={() => { setPreviewRole(option.role === role ? null : option.role); setShowPreviewPicker(false); setPreviewSearch(''); setActiveModule('Overview'); }} style={[styles.previewOption, { borderBottomColor: colors.border }]}><View style={styles.previewOptionCopy}><Ionicons name={option.icon} size={18} color={colors.accent} /><Text style={[styles.roleOptionText, { color: colors.foreground }]}>{option.role}</Text></View>{effectiveRole === option.role ? <Ionicons name="checkmark-circle" size={19} color={colors.accent} /> : null}</Pressable>)}</View>)}<Text style={[styles.previewHint, { color: colors.mutedForeground }]}>Preview mode never changes the signed-in user’s permanent role.</Text></View></View></Modal>;
+  return standalone ? <>{dashboardContent}{branchFormModal}{previewPickerModal}</> : <Modal animationType="slide" visible onRequestClose={close}><>{dashboardContent}{branchFormModal}{previewPickerModal}</></Modal>;
 }
 
 function AdminStat({ label, value, trend, icon }: { label: string; value: string; trend: string; icon: IconName }) {
@@ -1084,6 +1134,17 @@ const styles = StyleSheet.create({
   roleSelectorCopy: { flex: 1 },
   roleSelectorLabel: { color: '#D9C56D', fontSize: 9, fontWeight: '800', letterSpacing: 1.3 },
   roleSelectorValue: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', marginTop: 2 },
+  previewBanner: { marginHorizontal: 16, marginBottom: 12, padding: 12, borderWidth: 1, borderRadius: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  previewBannerCopy: { flex: 1 },
+  previewBannerLabel: { fontSize: 9, fontWeight: '800', letterSpacing: 1.2 },
+  previewBannerRole: { fontSize: 12, fontWeight: '700', marginTop: 3 },
+  exitPreviewButton: { minHeight: 36, borderRadius: 9, paddingHorizontal: 11, alignItems: 'center', justifyContent: 'center' },
+  exitPreviewText: { color: '#FFFFFF', fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
+  previewSheet: { paddingTop: 20, paddingBottom: 22, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '90%' },
+  previewDepartment: { paddingHorizontal: 20, paddingTop: 13, paddingBottom: 5, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  previewOption: { minHeight: 46, marginHorizontal: 16, paddingHorizontal: 7, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
+  previewOptionCopy: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  previewHint: { marginTop: 14, marginHorizontal: 20, fontSize: 10, lineHeight: 15, textAlign: 'center' },
   roleMenu: { marginHorizontal: 16, marginTop: 7, borderRadius: 13, borderWidth: 1, overflow: 'hidden' },
   roleOption: { minHeight: 42, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
   roleOptionText: { fontSize: 12, fontWeight: '600' },

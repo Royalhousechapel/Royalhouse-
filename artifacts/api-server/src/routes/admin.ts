@@ -32,9 +32,9 @@ router.get("/admin/me", (req: AdminRequest, res): void => {
   }
   res.json(GetAdminProfileResponse.parse({
     clerkUserId: admin.clerkUserId,
-    role: admin.role,
+    role: req.actualAdmin?.role ?? admin.role,
     branchId: admin.branchId,
-    modules: adminModulePermissions[admin.role],
+    modules: adminModulePermissions[req.admin?.role ?? admin.role],
   }));
 });
 

@@ -1,0 +1,322 @@
+Add a Department / Role Preview Switcher to the existing Royalhouse Connect application.
+
+PURPOSE:
+I need an easy way inside the application to switch between different departments, roles, and user views so I can preview exactly what each person would see on their screen.
+
+This is primarily for development, testing, demonstrations, and admin preview.
+
+IMPORTANT:
+Do not create separate disconnected dashboards. All dashboards should use the same backend, database, permissions, and data structure.
+
+CREATE A "VIEW AS" / "SWITCH ROLE" BUTTON
+
+Place a clearly visible button in the Admin/Super Admin interface called:
+
+"View As"
+
+or
+
+"Switch Role"
+
+When clicked, it should open a dropdown/modal showing all available departments and roles.
+
+EXAMPLE OPTIONS:
+
+Leadership
+
+* Super Admin / Rev
+* Pastoral Leadership
+* Church Administrator
+
+Connect Team
+
+* Connect Team Leader
+* Connect Team Member
+
+Finance
+
+* Finance Administrator
+* Finance Team Member
+
+Foundation School
+
+* Foundation School Administrator
+* Foundation School Team Member
+
+Ministries
+
+* Ministry Leader
+* Ministry Administrator
+
+Media
+
+* Media Administrator
+* Media Team Member
+
+Events
+
+* Events Administrator
+* Events Team Member
+
+Communications
+
+* Communications Administrator
+
+Membership
+
+* Membership Administrator
+
+Branch Administration
+
+* Branch Administrator
+
+Member
+
+* Regular Member
+
+Visitor
+
+* Visitor
+
+OTHER:
+Make the available roles configurable from the Admin settings instead of permanently hard-coding them.
+
+WHEN A ROLE IS SELECTED:
+
+The interface should immediately switch into that role's dashboard/view.
+
+For example:
+
+VIEW AS → Connect Team Member
+
+The screen should show exactly what a Connect Team Member would normally see:
+
+* Their dashboard
+* Assigned visitors
+* Assigned members
+* Calls to make
+* Follow-ups
+* Call logging
+* Person profiles they have permission to access
+* Notifications
+* Relevant tasks
+* Connect Team tools
+
+It should NOT show Finance, Super Admin controls, private leadership information, or other restricted areas.
+
+VIEW AS → Finance
+
+Show the Finance user's actual interface and permissions.
+
+VIEW AS → Ministry Leader
+
+Show the Ministry Leader interface.
+
+VIEW AS → Member
+
+Show the normal member-facing experience.
+
+VIEW AS → Visitor
+
+Show the visitor-facing experience.
+
+VIEW AS → SUPER ADMIN / REV
+
+Show the complete church-wide administration experience.
+
+REV'S VIEW SHOULD INCLUDE:
+
+* Church-wide dashboard
+* All church units
+* Connect Team
+* Visitors
+* Members
+* Foundation School
+* Ministries
+* Finance overview according to authorization
+* Events
+* Media
+* Sermons
+* Podcast
+* Communications
+* Reports
+* Branch management
+* Users
+* Roles & permissions
+* Audit logs
+* System activity
+* Settings
+* Other authorized administrative functions
+
+PREVIEW MODE INDICATOR:
+
+When a Super Admin is viewing another role, display a clear banner at the top:
+
+"PREVIEW MODE — Viewing as Connect Team Member"
+
+or:
+
+"PREVIEW MODE — Viewing as Finance Administrator"
+
+Include an obvious button:
+
+"EXIT PREVIEW"
+
+Clicking it must immediately return to the Super Admin view.
+
+SECURITY:
+
+This feature must NOT actually change the logged-in user's permanent permissions.
+
+If Rev selects:
+
+"View As → Connect Team Member"
+
+Rev is still authenticated as Super Admin.
+
+The application is simply displaying the Connect Team Member interface and enforcing that role's UI/data visibility for the preview.
+
+Do not modify the user's real account role.
+
+Do not modify database permissions.
+
+Do not accidentally downgrade the Super Admin account.
+
+DATA:
+
+Use the same real application data and database.
+
+Do not create fake separate databases for each role.
+
+Where necessary, use appropriate test/demo records so the different screens can be properly previewed.
+
+PERMISSION TESTING:
+
+The View As feature should also be useful for testing permissions.
+
+When viewing as a specific role:
+
+* Hide restricted navigation
+* Hide restricted buttons
+* Hide restricted records
+* Prevent unauthorized API actions
+* Prevent unauthorized database operations
+* Respect backend authorization
+* Respect role permissions
+
+Do NOT rely only on hiding buttons in the frontend.
+
+Backend/API authorization must also enforce permissions.
+
+DEPARTMENT SWITCHER:
+
+In addition to roles, allow switching by department/unit.
+
+Example:
+
+Switch Department
+
+→ Connect Team
+
+→ Finance
+
+→ Media
+
+→ Worship
+
+→ Children's Ministry
+
+→ Men Makers
+
+→ Royal Ladies
+
+→ WMG
+
+→ SHEvolve
+
+→ Foundation School
+
+→ Events
+
+→ Communications
+
+→ Administration
+
+→ Other configured church units
+
+If a department has multiple roles, allow:
+
+Department → Role
+
+Example:
+
+Connect Team → Leader
+
+Connect Team → Member
+
+Finance → Administrator
+
+Finance → Staff
+
+Ministry → Leader
+
+Ministry → Member
+
+The system should dynamically generate these options from the role/department configuration.
+
+MOBILE:
+
+Make the switcher responsive and easy to use on mobile.
+
+DESKTOP:
+
+Make it easy to access from the Super Admin dashboard.
+
+UX:
+
+The switcher should be polished and professional.
+
+Use a clean dropdown/modal with:
+
+* Search
+* Department grouping
+* Role grouping
+* Clear icons where appropriate
+* Current role indicator
+* Exit Preview button
+
+Do not make the interface cluttered.
+
+TEST EVERYTHING:
+
+Test every role.
+
+Test every department.
+
+Test navigation.
+
+Test permissions.
+
+Test mobile.
+
+Test desktop.
+
+Test direct URL access.
+
+Test API authorization.
+
+Test that restricted data cannot be accessed simply by manually entering a URL.
+
+Test that exiting preview always restores the Super Admin interface.
+
+Most importantly, every screen that appears in the switcher must actually open and function.
+
+No dead buttons.
+
+No placeholder dashboards.
+
+No broken navigation.
+
+No fake role switching.
+
+The goal is that I can sit on the Super Admin dashboard, click "View As," select any department/role, and immediately see and interact with the application exactly as that type of user would.

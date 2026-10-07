@@ -5,6 +5,7 @@ import { adminAssignmentsTable, db, type AdminAssignment } from "@workspace/db";
 
 export type AdminRequest = Request & {
   admin?: AdminAssignment;
+  actualAdmin?: AdminAssignment;
   userId?: string;
 };
 
@@ -16,12 +17,26 @@ export const adminModulePermissions: Record<string, string[]> = {
   Pastor: ["Members", "Connect Team", "Branches", "Ministries", "Sermons & Media", "Events", "Communication"],
   "Pastoral Leadership": ["Members", "Connect Team", "Ministries", "Events", "Communication"],
   "Church Administrator": ["Members", "Connect Team", "Branches", "Ministries", "Events", "Communication", "Audit Logs"],
-  "Connect Team Leader": ["Connect Team", "Members", "Audit Logs"],
+  "Connect Team Leader": ["Connect Team", "Members", "Communication"],
   "Connect Team Member": ["Connect Team"],
   "Ministry Leader": ["Members", "Ministries", "Events", "Communication", "Sermons & Media"],
   "Finance Team": ["Finance & Giving", "Members", "Audit Logs"],
   "Media Team": ["Sermons & Media", "Communication", "Events"],
   "Store Manager": ["Digital Store", "Events", "Audit Logs"],
+  "Finance Administrator": ["Finance & Giving", "Members", "Audit Logs"],
+  "Finance Team Member": ["Finance & Giving"],
+  "Foundation School Administrator": ["Members", "Ministries", "Events", "Communication"],
+  "Foundation School Team Member": ["Members", "Events"],
+  "Ministries Administrator": ["Members", "Ministries", "Events", "Communication"],
+  "Media Administrator": ["Sermons & Media", "Communication", "Events"],
+  "Media Team Member": ["Sermons & Media"],
+  "Events Administrator": ["Events", "Communication"],
+  "Events Team Member": ["Events"],
+  "Communications Administrator": ["Communication", "Events"],
+  "Membership Administrator": ["Members", "Communication"],
+  "Branch Administrator": ["Branches", "Members", "Events"],
+  "Regular Member": [],
+  Visitor: [],
 };
 
 export async function requireAdmin(req: AdminRequest, res: Response, next: NextFunction): Promise<void> {
@@ -43,7 +58,12 @@ export async function requireAdmin(req: AdminRequest, res: Response, next: NextF
   }
 
   req.userId = userId;
-  req.admin = admin;
+  req.actualAdmin = admin;
+  const previewRole = req.header("x-royalhouse-preview-role");
+  req.admin =
+    admin.role === "Super Admin" && previewRole && adminModulePermissions[previewRole]
+      ? { ...admin, role: previewRole }
+      : admin;
   next();
 }
 
