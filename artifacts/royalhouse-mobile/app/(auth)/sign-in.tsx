@@ -18,6 +18,11 @@ export default function SignInScreen() {
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [recoveryStep, setRecoveryStep] = useState<'idle' | 'code' | 'new-password'>('idle');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
   const busy = fetchStatus === 'fetching';
 
   useEffect(() => {
@@ -44,6 +49,101 @@ export default function SignInScreen() {
     }
   };
 
+  const beginPasswordRecovery = async () => {
+    if (!emailAddress.trim()) {
+      setErrorMessage('Enter your account email address first.');
+      return;
+    }
+    setErrorMessage('');
+    setResetMessage('');
+    try {
+      const created = await signIn.create({ identifier: emailAddress.trim() });
+      if (created.error) {
+        setErrorMessage(created.error.message ?? 'Could not start password recovery.');
+        return;
+      }
+      const { error } = await signIn.resetPasswordEmailCode.sendCode();
+      if (error) {
+        setErrorMessage(error.message ?? 'Could not send a reset code. Check the email and try again.');
+        return;
+      }
+      setRecoveryStep('code');
+      setResetMessage('Check your email for a password reset code.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not send a reset code. Try again.');
+    }
+  };
+
+  const verifyResetCode = async () => {
+    setErrorMessage('');
+    setResetMessage('');
+    try {
+      const { error } = await signIn.resetPasswordEmailCode.verifyCode({ code: resetCode.trim() });
+      if (error) {
+        setErrorMessage(error.message ?? 'That code could not be verified. Check it and try again.');
+        return;
+      }
+      if (signIn.status === 'needs_new_password') {
+        setRecoveryStep('new-password');
+      } else {
+        setErrorMessage('The code was not accepted. Request a new code and try again.');
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'That code could not be verified. Try again.');
+    }
+  };
+
+  const submitNewPassword = async () => {
+    if (newPassword.length < 8) {
+      setErrorMessage('Choose a password with at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorMessage('The passwords do not match.');
+      return;
+    }
+    setErrorMessage('');
+    try {
+      const { error } = await signIn.resetPasswordEmailCode.submitPassword({ password: newPassword });
+      if (error) {
+        setErrorMessage(error.message ?? 'Could not update the password. Try again.');
+        return;
+      }
+      if (signIn.status === 'complete') {
+        await finishSignIn();
+      } else {
+        setErrorMessage('Password updated, but sign-in could not be completed. Return to sign in and use your new password.');
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not update the password. Try again.');
+    }
+  };
+
+  const exitPasswordRecovery = () => {
+    signIn.reset();
+    setRecoveryStep('idle');
+    setResetCode('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setResetMessage('');
+    setErrorMessage('');
+  };
+
+  const resendResetCode = async () => {
+    setErrorMessage('');
+    setResetMessage('');
+    try {
+      const { error } = await signIn.resetPasswordEmailCode.sendCode();
+      if (error) {
+        setErrorMessage(error.message ?? 'Could not send a new code. Try again.');
+        return;
+      }
+      setResetMessage('A new reset code was sent. Check your email.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not send a new code. Try again.');
+    }
+  };
+
   const googleSignIn = async () => {
     setErrorMessage('');
     try {
@@ -66,13 +166,51 @@ export default function SignInScreen() {
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Sign in to continue your kingdom journey.</Text>
       <Text style={[styles.label, { color: colors.foreground }]}>Email address</Text>
       <TextInput autoCapitalize="none" autoCorrect={false} keyboardType="email-address" value={emailAddress} onChangeText={setEmailAddress} placeholder="you@example.com" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
-      <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
-      <TextInput secureTextEntry value={password} onChangeText={setPassword} placeholder="Your password" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+      {recoveryStep === 'idle' ? (
+        <>
+          <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
+          <TextInput secureTextEntry value={password} onChangeText={setPassword} placeholder="Your password" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+          <Pressable disabled={busy} onPress={() => void beginPasswordRecovery()} style={styles.forgotPassword}>
+            <Text style={[styles.link, { color: colors.accent }]}>Forgot password?</Text>
+          </Pressable>
+        </>
+      ) : recoveryStep === 'code' ? (
+        <>
+          <Text style={[styles.label, { color: colors.foreground }]}>Password reset code</Text>
+          <Text style={[styles.resetHint, { color: colors.mutedForeground }]}>Enter the code sent to the email address on your account.</Text>
+          <TextInput keyboardType="number-pad" autoCapitalize="none" value={resetCode} onChangeText={setResetCode} placeholder="Enter reset code" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+          <Pressable disabled={!resetCode.trim() || busy} onPress={() => void verifyResetCode()} style={[styles.primaryButton, { backgroundColor: colors.accent }, busy && styles.disabled]}>
+            <Text style={styles.primaryButtonText}>{busy ? 'Checking code…' : 'Verify code'}</Text>
+          </Pressable>
+          <Pressable disabled={busy} onPress={() => void resendResetCode()} style={styles.recoveryAction}>
+            <Text style={[styles.link, { color: colors.accent }]}>Send a new code</Text>
+          </Pressable>
+        </>
+      ) : (
+        <>
+          <Text style={[styles.label, { color: colors.foreground }]}>New password</Text>
+          <TextInput secureTextEntry value={newPassword} onChangeText={setNewPassword} placeholder="At least 8 characters" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+          <Text style={[styles.label, { color: colors.foreground }]}>Confirm new password</Text>
+          <TextInput secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Enter the new password again" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+          <Pressable disabled={!newPassword || !confirmPassword || busy} onPress={() => void submitNewPassword()} style={[styles.primaryButton, { backgroundColor: colors.accent }, busy && styles.disabled]}>
+            <Text style={styles.primaryButtonText}>{busy ? 'Updating…' : 'Update password'}</Text>
+          </Pressable>
+        </>
+      )}
       {(errorMessage || errors?.fields?.identifier?.message) ? <Text style={styles.error}>{errorMessage || errors?.fields?.identifier?.message}</Text> : null}
-      <Pressable disabled={!emailAddress || !password || busy} onPress={submit} style={[styles.primaryButton, { backgroundColor: colors.accent }, busy && styles.disabled]}><Text style={styles.primaryButtonText}>{busy ? 'Signing in…' : 'Sign in'}</Text></Pressable>
-      <View style={styles.divider}><View style={[styles.dividerLine, { backgroundColor: colors.border }]} /><Text style={[styles.dividerText, { color: colors.mutedForeground }]}>OR</Text><View style={[styles.dividerLine, { backgroundColor: colors.border }]} /></View>
-      <Pressable disabled={busy} onPress={googleSignIn} style={[styles.googleButton, { backgroundColor: colors.card, borderColor: colors.border }]}><Ionicons name="logo-google" size={18} color={colors.foreground} /><Text style={[styles.googleText, { color: colors.foreground }]}>Continue with Google</Text></Pressable>
-      <View style={styles.footer}><Text style={[styles.footerText, { color: colors.mutedForeground }]}>New to Royalhouse? </Text><Pressable onPress={() => router.push('./sign-up')}><Text style={[styles.link, { color: colors.accent }]}>Create an account</Text></Pressable></View>
+      {resetMessage ? <Text style={[styles.resetMessage, { color: colors.mutedForeground }]}>{resetMessage}</Text> : null}
+      {recoveryStep === 'idle' ? (
+        <>
+          <Pressable disabled={!emailAddress || !password || busy} onPress={submit} style={[styles.primaryButton, { backgroundColor: colors.accent }, busy && styles.disabled]}><Text style={styles.primaryButtonText}>{busy ? 'Signing in…' : 'Sign in'}</Text></Pressable>
+          <View style={styles.divider}><View style={[styles.dividerLine, { backgroundColor: colors.border }]} /><Text style={[styles.dividerText, { color: colors.mutedForeground }]}>OR</Text><View style={[styles.dividerLine, { backgroundColor: colors.border }]} /></View>
+          <Pressable disabled={busy} onPress={googleSignIn} style={[styles.googleButton, { backgroundColor: colors.card, borderColor: colors.border }]}><Ionicons name="logo-google" size={18} color={colors.foreground} /><Text style={[styles.googleText, { color: colors.foreground }]}>Continue with Google</Text></Pressable>
+          <View style={styles.footer}><Text style={[styles.footerText, { color: colors.mutedForeground }]}>New to Royalhouse? </Text><Pressable onPress={() => router.push('./sign-up')}><Text style={[styles.link, { color: colors.accent }]}>Create an account</Text></Pressable></View>
+        </>
+      ) : (
+        <Pressable disabled={busy} onPress={exitPasswordRecovery} style={styles.recoveryAction}>
+          <Text style={[styles.link, { color: colors.accent }]}>Back to sign in</Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -85,6 +223,10 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, lineHeight: 20, marginTop: 7, marginBottom: 30 },
   label: { fontSize: 13, fontWeight: '700', marginTop: 15, marginBottom: 7 },
   input: { height: 50, borderWidth: 1, borderRadius: 11, paddingHorizontal: 14, fontSize: 14 },
+  forgotPassword: { alignSelf: 'flex-end', paddingVertical: 10 },
+  resetHint: { fontSize: 12, lineHeight: 17, marginTop: -2, marginBottom: 8 },
+  resetMessage: { fontSize: 12, lineHeight: 17, marginTop: 12 },
+  recoveryAction: { alignSelf: 'center', paddingVertical: 13 },
   error: { color: '#B42318', fontSize: 12, lineHeight: 17, marginTop: 10 },
   primaryButton: { height: 51, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginTop: 22 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
