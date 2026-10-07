@@ -9,6 +9,15 @@ import { useColors } from '@/hooks/useColors';
 
 WebBrowser.maybeCompleteAuthSession();
 
+type SecondFactorMethod = 'email_code' | 'phone_code' | 'totp' | 'backup_code';
+
+const secondFactorLabels: Record<SecondFactorMethod, string> = {
+  email_code: 'Email code',
+  phone_code: 'Text message code',
+  totp: 'Authenticator code',
+  backup_code: 'Backup code',
+};
+
 export default function SignInScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -23,6 +32,10 @@ export default function SignInScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetMessage, setResetMessage] = useState('');
+  const [secondFactorStep, setSecondFactorStep] = useState(false);
+  const [secondFactorMethods, setSecondFactorMethods] = useState<SecondFactorMethod[]>([]);
+  const [activeSecondFactor, setActiveSecondFactor] = useState<SecondFactorMethod | null>(null);
+  const [secondFactorCode, setSecondFactorCode] = useState('');
   const busy = fetchStatus === 'fetching';
 
   useEffect(() => {
@@ -35,17 +48,107 @@ export default function SignInScreen() {
     });
   }, [router, signIn]);
 
-  const submit = async () => {
+  const selectSecondFactor = async (method: SecondFactorMethod) => {
     setErrorMessage('');
-    const result = await signIn.password({ emailAddress: emailAddress.trim(), password });
-    if (result.error) {
-      setErrorMessage(result.error.message ?? 'Unable to sign in. Check your details and try again.');
+    setResetMessage('');
+    setSecondFactorCode('');
+    try {
+      if (method === 'email_code') {
+        const { error } = await signIn.mfa.sendEmailCode();
+        if (error) {
+          setErrorMessage(error.message ?? 'Could not send an email verification code.');
+          return;
+        }
+        setResetMessage('We sent a verification code to your email.');
+      } else if (method === 'phone_code') {
+        const { error } = await signIn.mfa.sendPhoneCode();
+        if (error) {
+          setErrorMessage(error.message ?? 'Could not send a text verification code.');
+          return;
+        }
+        setResetMessage('We sent a verification code to your phone.');
+      }
+      setActiveSecondFactor(method);
+      setSecondFactorStep(true);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not start verification. Try again.');
+    }
+  };
+
+  const beginAdditionalVerification = async () => {
+    const knownMethods: SecondFactorMethod[] = ['email_code', 'phone_code', 'totp', 'backup_code'];
+    const availableMethods = knownMethods.filter((method) =>
+      signIn.supportedSecondFactors.some((factor) => factor.strategy === method),
+    );
+    setSecondFactorMethods(availableMethods);
+
+    if (signIn.status === 'needs_client_trust') {
+      if (!availableMethods.includes('email_code')) {
+        setErrorMessage('Clerk requires this device to be verified, but no email verification method is available for this account.');
+        return;
+      }
+      await selectSecondFactor('email_code');
       return;
     }
-    if (signIn.status === 'complete') {
-      await finishSignIn();
-    } else {
-      setErrorMessage('This account needs an additional verification step before it can continue.');
+
+    const preferredMethod = availableMethods.find((method) => method === 'email_code')
+      ?? availableMethods.find((method) => method === 'phone_code')
+      ?? availableMethods.find((method) => method === 'totp')
+      ?? availableMethods.find((method) => method === 'backup_code');
+    if (!preferredMethod) {
+      setErrorMessage('This account requires another verification method, but Clerk did not provide a supported method. Contact your administrator.');
+      return;
+    }
+    await selectSecondFactor(preferredMethod);
+  };
+
+  const submit = async () => {
+    setErrorMessage('');
+    setResetMessage('');
+    try {
+      const result = await signIn.password({ emailAddress: emailAddress.trim(), password });
+      if (result.error) {
+        setErrorMessage(result.error.message ?? 'Unable to sign in. Check your details and try again.');
+        return;
+      }
+      if (signIn.status === 'complete') {
+        await finishSignIn();
+      } else if (signIn.status === 'needs_client_trust' || signIn.status === 'needs_second_factor') {
+        await beginAdditionalVerification();
+      } else {
+        setErrorMessage(`Sign-in needs another step (${signIn.status ?? 'unknown'}). Try again or contact your administrator.`);
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to sign in. Try again.');
+    }
+  };
+
+  const verifySecondFactor = async () => {
+    if (!activeSecondFactor) return;
+    setErrorMessage('');
+    setResetMessage('');
+    try {
+      let error: { message?: string } | null = null;
+      if (activeSecondFactor === 'email_code') {
+        ({ error } = await signIn.mfa.verifyEmailCode({ code: secondFactorCode.trim() }));
+      } else if (activeSecondFactor === 'phone_code') {
+        ({ error } = await signIn.mfa.verifyPhoneCode({ code: secondFactorCode.trim() }));
+      } else if (activeSecondFactor === 'totp') {
+        ({ error } = await signIn.mfa.verifyTOTP({ code: secondFactorCode.trim() }));
+      } else {
+        ({ error } = await signIn.mfa.verifyBackupCode({ code: secondFactorCode.trim() }));
+      }
+      if (error) {
+        setErrorMessage(error.message ?? 'That verification code was not accepted. Try again.');
+        return;
+      }
+      if (signIn.status === 'complete') {
+        await finishSignIn();
+      } else {
+        setErrorMessage('Verification was accepted, but Clerk requires another sign-in step.');
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not verify this code. Try again.');
     }
   };
 
@@ -122,6 +225,10 @@ export default function SignInScreen() {
   const exitPasswordRecovery = () => {
     signIn.reset();
     setRecoveryStep('idle');
+    setSecondFactorStep(false);
+    setSecondFactorMethods([]);
+    setActiveSecondFactor(null);
+    setSecondFactorCode('');
     setResetCode('');
     setNewPassword('');
     setConfirmPassword('');
@@ -166,7 +273,42 @@ export default function SignInScreen() {
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Sign in to continue your kingdom journey.</Text>
       <Text style={[styles.label, { color: colors.foreground }]}>Email address</Text>
       <TextInput autoCapitalize="none" autoCorrect={false} keyboardType="email-address" value={emailAddress} onChangeText={setEmailAddress} placeholder="you@example.com" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
-      {recoveryStep === 'idle' ? (
+      {secondFactorStep ? (
+        <>
+          <Text style={[styles.label, { color: colors.foreground }]}>Additional verification</Text>
+          <Text style={[styles.resetHint, { color: colors.mutedForeground }]}>
+            Complete the verification step for this account to finish signing in.
+          </Text>
+          {secondFactorMethods.length > 1 ? (
+            <View style={styles.factorChoices}>
+              {secondFactorMethods.filter((method) => method !== activeSecondFactor).map((method) => (
+                <Pressable key={method} disabled={busy} onPress={() => void selectSecondFactor(method)} style={[styles.factorChoice, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                  <Text style={[styles.factorChoiceText, { color: colors.accent }]}>Use {secondFactorLabels[method]}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          <Text style={[styles.label, { color: colors.foreground }]}>{activeSecondFactor ? secondFactorLabels[activeSecondFactor] : 'Verification code'}</Text>
+          <TextInput
+            keyboardType={activeSecondFactor === 'backup_code' ? 'default' : 'number-pad'}
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={secondFactorCode}
+            onChangeText={setSecondFactorCode}
+            placeholder={activeSecondFactor === 'backup_code' ? 'Enter backup code' : 'Enter verification code'}
+            placeholderTextColor={colors.mutedForeground}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+          />
+          <Pressable disabled={!secondFactorCode.trim() || busy} onPress={() => void verifySecondFactor()} style={[styles.primaryButton, { backgroundColor: colors.accent }, busy && styles.disabled]}>
+            <Text style={styles.primaryButtonText}>{busy ? 'Verifying…' : 'Verify and sign in'}</Text>
+          </Pressable>
+          {activeSecondFactor === 'email_code' || activeSecondFactor === 'phone_code' ? (
+            <Pressable disabled={busy} onPress={() => activeSecondFactor && void selectSecondFactor(activeSecondFactor)} style={styles.recoveryAction}>
+              <Text style={[styles.link, { color: colors.accent }]}>Send a new code</Text>
+            </Pressable>
+          ) : null}
+        </>
+      ) : recoveryStep === 'idle' ? (
         <>
           <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
           <TextInput secureTextEntry value={password} onChangeText={setPassword} placeholder="Your password" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
@@ -199,7 +341,7 @@ export default function SignInScreen() {
       )}
       {(errorMessage || errors?.fields?.identifier?.message) ? <Text style={styles.error}>{errorMessage || errors?.fields?.identifier?.message}</Text> : null}
       {resetMessage ? <Text style={[styles.resetMessage, { color: colors.mutedForeground }]}>{resetMessage}</Text> : null}
-      {recoveryStep === 'idle' ? (
+      {!secondFactorStep && recoveryStep === 'idle' ? (
         <>
           <Pressable disabled={!emailAddress || !password || busy} onPress={submit} style={[styles.primaryButton, { backgroundColor: colors.accent }, busy && styles.disabled]}><Text style={styles.primaryButtonText}>{busy ? 'Signing in…' : 'Sign in'}</Text></Pressable>
           <View style={styles.divider}><View style={[styles.dividerLine, { backgroundColor: colors.border }]} /><Text style={[styles.dividerText, { color: colors.mutedForeground }]}>OR</Text><View style={[styles.dividerLine, { backgroundColor: colors.border }]} /></View>
@@ -227,6 +369,9 @@ const styles = StyleSheet.create({
   resetHint: { fontSize: 12, lineHeight: 17, marginTop: -2, marginBottom: 8 },
   resetMessage: { fontSize: 12, lineHeight: 17, marginTop: 12 },
   recoveryAction: { alignSelf: 'center', paddingVertical: 13 },
+  factorChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 5 },
+  factorChoice: { minHeight: 34, borderWidth: 1, borderRadius: 9, justifyContent: 'center', paddingHorizontal: 10 },
+  factorChoiceText: { fontSize: 11, fontWeight: '700' },
   error: { color: '#B42318', fontSize: 12, lineHeight: 17, marginTop: 10 },
   primaryButton: { height: 51, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginTop: 22 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
