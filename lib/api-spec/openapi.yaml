@@ -42,6 +42,18 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Branch"
+  /branches/directory:
+    get:
+      operationId: getBranchDirectory
+      tags: [branches]
+      summary: List published Royalhouse assemblies and additional managed locations
+      responses:
+        "200":
+          description: Official directory snapshot with source links and managed additions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BranchDirectory"
   /admin/me:
     get:
       operationId: getAdminProfile
@@ -420,6 +432,36 @@ components:
           type: string
       required:
         - status
+    BranchDirectoryEntry:
+      type: object
+      required: [id, name, locationGroup, country, region, area, temple, pastor, address, latitude, longitude, sourceUrl, official, featured]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        locationGroup: { type: string }
+        country: { type: ["string", "null"] }
+        region: { type: string }
+        area: { type: string }
+        temple: { type: ["string", "null"] }
+        pastor: { type: ["string", "null"] }
+        address: { type: ["string", "null"] }
+        latitude: { type: ["number", "null"] }
+        longitude: { type: ["number", "null"] }
+        sourceUrl: { type: ["string", "null"] }
+        official: { type: boolean }
+        featured: { type: boolean }
+    BranchDirectory:
+      type: object
+      required: [entries, officialEntryCount, checkedAt, sources]
+      properties:
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/BranchDirectoryEntry" }
+        officialEntryCount: { type: number, minimum: 0, multipleOf: 1 }
+        checkedAt: { type: string }
+        sources:
+          type: array
+          items: { type: string }
     Branch:
       type: object
       required: [id, name, country, region, city, address, pastor, latitude, longitude, featured, archived]

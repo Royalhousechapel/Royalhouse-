@@ -9,6 +9,38 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface BranchDirectoryEntry {
+  id: string;
+  name: string;
+  locationGroup: string;
+  /** @nullable */
+  country: string | null;
+  region: string;
+  area: string;
+  /** @nullable */
+  temple: string | null;
+  /** @nullable */
+  pastor: string | null;
+  /** @nullable */
+  address: string | null;
+  /** @nullable */
+  latitude: number | null;
+  /** @nullable */
+  longitude: number | null;
+  /** @nullable */
+  sourceUrl: string | null;
+  official: boolean;
+  featured: boolean;
+}
+
+export interface BranchDirectory {
+  entries: BranchDirectoryEntry[];
+  /** @minimum 0 */
+  officialEntryCount: number;
+  checkedAt: string;
+  sources: string[];
+}
+
 export interface Branch {
   id: string;
   name: string;

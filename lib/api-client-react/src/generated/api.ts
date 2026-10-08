@@ -27,6 +27,7 @@ import type {
   AdminUserUpdate,
   AssignConnectPersonRequest,
   Branch,
+  BranchDirectory,
   BranchInput,
   BranchUpdate,
   ConnectAssignment,
@@ -212,6 +213,83 @@ export function useListBranches<TData = Awaited<ReturnType<typeof listBranches>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListBranchesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetBranchDirectoryUrl = () => {
+
+
+
+
+  return `/api/branches/directory`
+}
+
+/**
+ * @summary List published Royalhouse assemblies and additional managed locations
+ */
+export const getBranchDirectory = async ( options?: Parameters<typeof customFetch>[1]): Promise<BranchDirectory> => {
+
+  return customFetch<BranchDirectory>(getGetBranchDirectoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBranchDirectoryQueryKey = () => {
+    return [
+    `/api/branches/directory`
+    ] as const;
+    }
+
+
+export const getGetBranchDirectoryQueryOptions = <TData = Awaited<ReturnType<typeof getBranchDirectory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBranchDirectory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBranchDirectoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBranchDirectory>>> = ({ signal }) => getBranchDirectory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBranchDirectory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBranchDirectoryQueryResult = NonNullable<Awaited<ReturnType<typeof getBranchDirectory>>>
+export type GetBranchDirectoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List published Royalhouse assemblies and additional managed locations
+ */
+
+export function useGetBranchDirectory<TData = Awaited<ReturnType<typeof getBranchDirectory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBranchDirectory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBranchDirectoryQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

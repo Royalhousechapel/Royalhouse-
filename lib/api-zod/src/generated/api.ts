@@ -39,6 +39,37 @@ export const ListBranchesResponse = zod.array(ListBranchesResponseItem)
 
 
 /**
+ * @summary List published Royalhouse assemblies and additional managed locations
+ */
+export const getBranchDirectoryResponseOfficialEntryCountMin = 0;
+export const getBranchDirectoryResponseOfficialEntryCountMultipleOf = 1;
+
+
+
+export const GetBranchDirectoryResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "locationGroup": zod.string(),
+  "country": zod.string().nullable(),
+  "region": zod.string(),
+  "area": zod.string(),
+  "temple": zod.string().nullable(),
+  "pastor": zod.string().nullable(),
+  "address": zod.string().nullable(),
+  "latitude": zod.number().nullable(),
+  "longitude": zod.number().nullable(),
+  "sourceUrl": zod.string().nullable(),
+  "official": zod.boolean(),
+  "featured": zod.boolean()
+})),
+  "officialEntryCount": zod.number().min(getBranchDirectoryResponseOfficialEntryCountMin).multipleOf(getBranchDirectoryResponseOfficialEntryCountMultipleOf),
+  "checkedAt": zod.string(),
+  "sources": zod.array(zod.string())
+})
+
+
+/**
  * @summary Get the signed-in administrator profile
  */
 export const GetAdminProfileResponse = zod.object({

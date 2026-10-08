@@ -14,6 +14,8 @@ export * from './adminUserRole';
 export * from './adminUserUpdate';
 export * from './assignConnectPersonRequest';
 export * from './branch';
+export * from './branchDirectory';
+export * from './branchDirectoryEntry';
 export * from './branchInput';
 export * from './branchUpdate';
 export * from './connectAssignment';

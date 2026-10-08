@@ -26,6 +26,8 @@ import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getListBranchesQueryKey,
+  getGetBranchDirectoryQueryKey,
+  useGetBranchDirectory,
   getGetAdminProfileQueryKey,
   getListConnectPeopleQueryKey,
   getGetConnectPersonProfileQueryKey,
@@ -44,7 +46,7 @@ import {
   useUpdateBranch,
   setPreviewRoleGetter,
 } from '@workspace/api-client-react';
-import type { Branch as ApiBranch, ConnectPerson, WorkflowOption } from '@workspace/api-client-react';
+import type { Branch as ApiBranch, BranchDirectoryEntry, ConnectPerson, WorkflowOption } from '@workspace/api-client-react';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 type ScreenName = 'home' | 'sermons' | 'give' | 'events' | 'profile' | 'prayer' | 'ministries' | 'branches' | 'admin';
@@ -537,32 +539,28 @@ export function BranchesScreen({ close, standalone = false }: { close: () => voi
   const colors = useColors();
   const [query, setQuery] = useState('');
   const [country, setCountry] = useState('All');
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
-  const { data: apiBranches, isLoading: branchesLoading } = useListBranches();
-  const countries = ['All', 'United States', 'Ghana', 'Canada'];
-  const branches: Branch[] = apiBranches?.map(apiBranchToBranch) ?? [];
-  const activeBranches = branches.filter((branch) => !branch.archived);
-  const filteredBranches = useMemo(() => activeBranches.filter((branch) => {
-    const matchesCountry = country === 'All' || branch.country === country;
-    const searchText = `${branch.name} ${branch.country} ${branch.region} ${branch.city} ${branch.pastor}`.toLowerCase();
+  const [selectedBranch, setSelectedBranch] = useState<BranchDirectoryEntry | null>(null);
+  const directoryQuery = useGetBranchDirectory();
+  const { data: directory, isLoading: branchesLoading } = directoryQuery;
+  const branches = directory?.entries ?? [];
+  const countries = ['All', ...new Set(branches.map((branch) => branch.locationGroup))];
+  const filteredBranches = useMemo(() => branches.filter((branch) => {
+    const matchesCountry = country === 'All' || branch.locationGroup === country;
+    const searchText = `${branch.name} ${branch.country ?? ''} ${branch.region} ${branch.area} ${branch.pastor ?? ''} ${branch.temple ?? ''} ${branch.address ?? ''}`.toLowerCase();
     return matchesCountry && searchText.includes(query.toLowerCase().trim());
-  }), [activeBranches, country, query]);
+  }), [branches, country, query]);
 
-  const openDirections = (branch: Branch) => {
-    const destination = encodeURIComponent(`${branch.name}, ${branch.address}, ${branch.city}, ${branch.country}`);
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${destination}`).catch(() => {
-      Alert.alert('Directions unavailable', 'Please search for this branch in your preferred maps app.');
+  const openBranchLink = (branch: BranchDirectoryEntry) => {
+    const destination = encodeURIComponent(`${branch.name}, ${branch.address ?? ''}, ${branch.area}, ${branch.country ?? branch.locationGroup}`);
+    const url = branch.sourceUrl || `https://www.google.com/maps/search/?api=1&query=${destination}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Could not open link', branch.sourceUrl || 'Please search for this branch in your preferred maps app.');
     });
   };
 
-  const showContactInfo = (branch: Branch) => {
+  const showContactInfo = (branch: BranchDirectoryEntry) => {
     Alert.alert('Branch contact', `${branch.name}\n\nContact details are managed by Headquarters and will appear here once published.`);
   };
-
-  const mapPosition = (branch: Branch) => ({
-    left: `${Math.max(6, Math.min(90, ((branch.coordinates.longitude + 130) / 175) * 100))}%` as `${number}%`,
-    top: `${Math.max(10, Math.min(84, (1 - branch.coordinates.latitude / 62) * 100))}%` as `${number}%`,
-  });
 
   const content = (
       <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.scrollContent, { paddingTop: 62 }]} showsVerticalScrollIndicator={false}>
@@ -575,59 +573,56 @@ export function BranchesScreen({ close, standalone = false }: { close: () => voi
 
         <View style={[styles.searchBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="search" size={19} color={colors.mutedForeground} />
-          <TextInput value={query} onChangeText={setQuery} placeholder="Search branch, city, or pastor" placeholderTextColor={colors.mutedForeground} style={[styles.searchInput, { color: colors.foreground }]} />
+          <TextInput testID="input-branch-search" value={query} onChangeText={setQuery} placeholder="Search assembly, London, region, or pastor" placeholderTextColor={colors.mutedForeground} style={[styles.searchInput, { color: colors.foreground }]} />
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryList}>
           {countries.map((item) => (
-            <Pressable key={item} onPress={() => setCountry(item)} style={[styles.categoryChip, { backgroundColor: country === item ? colors.accent : colors.card, borderColor: country === item ? colors.accent : colors.border }]}>
+            <Pressable key={item} testID={`branch-group-${item.toLowerCase().replaceAll(' ', '-')}`} onPress={() => { setCountry(item); setSelectedBranch(null); }} style={[styles.categoryChip, { backgroundColor: country === item ? colors.accent : colors.card, borderColor: country === item ? colors.accent : colors.border }]}>
               <Text style={[styles.categoryText, { color: country === item ? '#FFFFFF' : colors.foreground }]}>{item}</Text>
             </Pressable>
           ))}
         </ScrollView>
 
-        <View style={[styles.mapPanel, { backgroundColor: colors.primary }]}>
-          <View style={styles.mapGridLineHorizontalOne} />
-          <View style={styles.mapGridLineHorizontalTwo} />
-          <View style={styles.mapGridLineVerticalOne} />
-          <View style={styles.mapGridLineVerticalTwo} />
-          <View style={styles.mapLandOne} />
-          <View style={styles.mapLandTwo} />
-          <Text style={styles.mapLabel}>GLOBAL BRANCH MAP</Text>
-          {activeBranches.map((branch) => (
-            <Pressable key={branch.name} onPress={() => setSelectedBranch(branch)} style={[styles.mapPin, mapPosition(branch)]}>
-              <View style={[styles.mapPinDot, { backgroundColor: selectedBranch?.name === branch.name ? '#FFFFFF' : colors.accent, borderColor: selectedBranch?.name === branch.name ? colors.accent : colors.primary }]} />
-            </Pressable>
-          ))}
-          <View style={styles.mapLegend}><View style={[styles.mapPinDot, { backgroundColor: colors.accent }]} /><Text style={styles.mapLegendText}>{branchesLoading ? 'Loading locations…' : `${activeBranches.length} listed locations`}</Text></View>
+        <View style={[styles.mapPanel, { backgroundColor: colors.primary, height: 155 }]}>
+          <Text style={styles.mapLabel}>OFFICIAL WORLDWIDE DIRECTORY</Text>
+          <Text style={{ color: colors.primaryForeground, fontSize: 26, fontWeight: '700', marginHorizontal: 18, marginTop: 49 }}>{directory ? `${directory.officialEntryCount} published entries` : 'Loading directory…'}</Text>
+          <Text style={{ color: colors.primaryForeground, fontSize: 12, marginHorizontal: 18, marginTop: 6 }}>Local churches and foreign missions</Text>
+          <View style={styles.mapLegend}><Text style={styles.mapLegendText}>{directory ? `${branches.length} total entries · Checked ${directory.checkedAt}` : 'Fetching the full assembly list'}</Text></View>
         </View>
 
         {selectedBranch ? (
           <View style={[styles.branchDetailCard, { backgroundColor: colors.card, borderColor: colors.accent }]}>
             <View style={styles.branchDetailHeader}>
               <View style={[styles.branchLogoSmall, { backgroundColor: colors.primary }]}><Image source={logo} style={styles.branchLogoImage} resizeMode="contain" /></View>
-              <View style={styles.branchDetailTitleCopy}><Text style={[styles.branchDetailName, { color: colors.foreground }]}>{selectedBranch.name}</Text><Text style={[styles.branchDetailRegion, { color: colors.accent }]}>{selectedBranch.city} · {selectedBranch.country}</Text></View>
+              <View style={styles.branchDetailTitleCopy}><Text style={[styles.branchDetailName, { color: colors.foreground }]}>{selectedBranch.name}</Text><Text style={[styles.branchDetailRegion, { color: colors.accent }]}>{selectedBranch.area} · {selectedBranch.country ?? selectedBranch.locationGroup}</Text></View>
               <Pressable onPress={() => setSelectedBranch(null)} hitSlop={12}><Ionicons name="close-circle-outline" size={21} color={colors.mutedForeground} /></Pressable>
             </View>
-            <View style={[styles.branchInfoLine, { borderTopColor: colors.border }]}><Ionicons name="location-outline" size={17} color={colors.accent} /><Text style={[styles.branchInfoText, { color: colors.foreground }]}>{selectedBranch.address}</Text></View>
-            <View style={styles.branchInfoLine}><Ionicons name="person-outline" size={17} color={colors.accent} /><Text style={[styles.branchInfoText, { color: colors.foreground }]}>{selectedBranch.pastor}</Text></View>
+            <View style={[styles.branchInfoLine, { borderTopColor: colors.border }]}><Ionicons name="location-outline" size={17} color={colors.accent} /><Text style={[styles.branchInfoText, { color: colors.foreground }]}>{selectedBranch.address || selectedBranch.temple || 'Street address not published in the official directory.'}</Text></View>
+            {selectedBranch.pastor ? <View style={styles.branchInfoLine}><Ionicons name="person-outline" size={17} color={colors.accent} /><Text style={[styles.branchInfoText, { color: colors.foreground }]}>{selectedBranch.pastor}</Text></View> : null}
             <View style={styles.branchActionRow}>
-              <Pressable onPress={() => openDirections(selectedBranch)} style={[styles.branchAction, { backgroundColor: colors.primary }]}><Ionicons name="navigate-outline" size={17} color="#FFFFFF" /><Text style={styles.branchActionText}>Directions</Text></Pressable>
-              <Pressable onPress={() => showContactInfo(selectedBranch)} style={[styles.branchAction, { backgroundColor: '#F8F1D7' }]}><Ionicons name="call-outline" size={17} color={colors.accent} /><Text style={[styles.branchActionText, { color: colors.foreground }]}>Contact</Text></Pressable>
+              <Pressable testID="button-branch-source" onPress={() => openBranchLink(selectedBranch)} style={[styles.branchAction, { backgroundColor: colors.primary }]}><Ionicons name={selectedBranch.sourceUrl ? 'open-outline' : 'navigate-outline'} size={17} color="#FFFFFF" /><Text style={styles.branchActionText}>{selectedBranch.sourceUrl ? 'Official listing' : 'Directions'}</Text></Pressable>
+              {!selectedBranch.sourceUrl ? <Pressable onPress={() => showContactInfo(selectedBranch)} style={[styles.branchAction, { backgroundColor: '#F8F1D7' }]}><Ionicons name="call-outline" size={17} color={colors.accent} /><Text style={[styles.branchActionText, { color: colors.foreground }]}>Contact</Text></Pressable> : null}
             </View>
-            <Text style={[styles.pendingLabel, { color: colors.mutedForeground }]}>Service times, ministries, events, livestream, and branch contacts will appear as Headquarters publishes each profile.</Text>
+            <Text style={[styles.pendingLabel, { color: colors.mutedForeground }]}>{selectedBranch.official ? 'Name and leadership are shown as published by Royalhouse. Open the official listing for current contact details. No street address or map location has been guessed.' : 'This additional branch profile is managed by Headquarters.'}</Text>
           </View>
         ) : null}
 
-        <SectionHeader title={`${filteredBranches.length} listed locations`} action="Clear" onPress={() => { setQuery(''); setCountry('All'); }} />
+        <SectionHeader title={`${filteredBranches.length} directory entries`} action="Clear" onPress={() => { setQuery(''); setCountry('All'); setSelectedBranch(null); }} />
         {filteredBranches.map((branch) => (
-          <Pressable key={branch.name} onPress={() => setSelectedBranch(branch)} style={({ pressed }) => [styles.branchListRow, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}>
+          <Pressable key={branch.id} testID={`branch-entry-${branch.id}`} onPress={() => setSelectedBranch(branch)} style={({ pressed }) => [styles.branchListRow, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}>
             <View style={[styles.branchListIcon, { backgroundColor: colors.primary }]}><Image source={logo} style={styles.branchListLogo} resizeMode="contain" /></View>
-            <View style={styles.branchListCopy}><Text style={[styles.branchListName, { color: colors.foreground }]}>{branch.name}</Text><Text style={[styles.branchListMeta, { color: colors.mutedForeground }]}>{branch.city}, {branch.country}</Text><Text style={[styles.branchListAddress, { color: colors.mutedForeground }]}>{branch.address}</Text></View>
+            <View style={styles.branchListCopy}>
+              <Text style={[styles.branchListName, { color: colors.foreground }]}>{branch.name}</Text>
+              <Text style={[styles.branchListMeta, { color: colors.mutedForeground }]}>{branch.area} · {branch.region}</Text>
+              <Text style={[styles.branchListAddress, { color: colors.foreground }]}>{branch.pastor ? `Pastor: ${branch.pastor}` : 'Pastor not listed'}</Text>
+              <Text style={[styles.branchListAddress, { color: colors.mutedForeground }]}>{branch.temple || branch.address || 'Street address not published'}</Text>
+            </View>
             <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
           </Pressable>
         ))}
-        {filteredBranches.length === 0 ? <EmptyState icon="location-outline" title="No branches found" body="Try a different country, city, or branch name." /> : null}
-        <View style={[styles.directoryNote, { backgroundColor: '#F8F1D7' }]}><Ionicons name="shield-checkmark-outline" size={19} color={colors.accent} /><Text style={[styles.directoryNoteText, { color: colors.foreground }]}>This directory starts with locations named in the official brief. Headquarters can add and update unlimited branch profiles through the future admin dashboard.</Text></View>
+        {directoryQuery.isError ? <><EmptyState icon="alert-circle-outline" title="Directory could not load" body="Please retry to load the full published assembly list." /><ActionButton label="Retry directory" onPress={() => { void directoryQuery.refetch(); }} /></> : null}
+        {!branchesLoading && !directoryQuery.isError && filteredBranches.length === 0 ? <EmptyState icon="location-outline" title="No branches found" body="Try another region, assembly name, or search for London." /> : null}
+        <View style={[styles.directoryNote, { backgroundColor: '#F8F1D7' }]}><Ionicons name="shield-checkmark-outline" size={19} color={colors.accent} /><Text style={[styles.directoryNoteText, { color: colors.foreground }]}>Includes every entry published in Royalhouse's Local Churches and Foreign Missions directories, plus additional Headquarters-managed profiles. Repeated names are retained as separate published entries. Check each official listing for updates.</Text></View>
         <View style={styles.bottomSpacer} />
       </ScrollView>
   );
@@ -709,6 +704,7 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
         await createBranchMutation.mutateAsync({ data: payload });
       }
       await queryClient.invalidateQueries({ queryKey: getListBranchesQueryKey() });
+      await queryClient.invalidateQueries({ queryKey: getGetBranchDirectoryQueryKey() });
       setShowBranchForm(false);
       setActiveModule('Branches');
       Alert.alert(editingBranch ? 'Branch updated' : 'Branch added', `${payload.name} is now available in the global directory.`);
@@ -724,6 +720,7 @@ export function AdminDashboardScreen({ close, standalone = false }: { close: () 
         try {
           await archiveBranchMutation.mutateAsync({ id: branch.id! });
           await queryClient.invalidateQueries({ queryKey: getListBranchesQueryKey() });
+          await queryClient.invalidateQueries({ queryKey: getGetBranchDirectoryQueryKey() });
         } catch (error) {
           Alert.alert('Could not archive branch', error instanceof Error ? error.message : 'Please try again.');
         }

@@ -2,3 +2,4 @@
 - [Expo SDK upgrade constraints](expo-sdk-upgrades.md) — SDK upgrades may need a narrow pnpm age-policy exception and SDK-specific Router/TypeScript compatibility fixes.
 - [Private Expo preview limit](expo-private-preview.md) — native Expo Go previews are unavailable for this private mobile artifact; use the browser preview or a supported native test setup.
 - [Expo browser history](expo-browser-history.md) — use distinct Stack routes for screens that must support browser Back; tab query changes can replace history.
+- [Worldwide branch coverage](worldwide-branch-coverage.md) — include London and the whole published Royalhouse network, not just the original seed locations.
