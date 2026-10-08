@@ -75,6 +75,9 @@ function ClassicTabLayout() {
     >
       <Tabs.Screen
         name="index"
+        listeners={({ navigation }) => ({
+          tabPress: () => navigation.setParams({ view: undefined }),
+        })}
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) =>

@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import {
-  Alert,
   Image,
   ImageBackground,
   Linking,
@@ -17,6 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
+import { Alert } from '@/utils/alert';
 import { AdminUsersRolesWorkspace } from '@/components/admin/AdminUsersRolesWorkspace';
 import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
@@ -252,12 +252,12 @@ function ActionButton({
         variant === 'primary' && { backgroundColor: colors.primary },
         variant === 'gold' && { backgroundColor: colors.accent },
         variant === 'outline' && { borderColor: colors.border, backgroundColor: colors.card },
-        variant === 'ghost' && { backgroundColor: 'transparent' },
+        variant === 'ghost' && { backgroundColor: 'transparent', borderColor: colors.primaryForeground },
         pressed && styles.pressed,
       ]}
     >
-      {icon ? <Ionicons name={icon} size={16} color={variant === 'outline' || variant === 'ghost' ? colors.primary : colors.primaryForeground} /> : null}
-      <Text style={[styles.actionButtonText, { color: variant === 'outline' || variant === 'ghost' ? colors.primary : colors.primaryForeground }]}>{label}</Text>
+      {icon ? <Ionicons name={icon} size={16} color={variant === 'outline' ? colors.primary : colors.primaryForeground} /> : null}
+      <Text style={[styles.actionButtonText, { color: variant === 'outline' ? colors.primary : colors.primaryForeground }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -323,7 +323,7 @@ function HomeScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
           <Text style={styles.heroTitle}>There is a place for you in the house.</Text>
           <Text style={styles.heroBody}>Join a global family learning to live, love, and lead like Jesus.</Text>
           <View style={styles.heroActions}>
-            <ActionButton label="Watch live" icon="play" variant="gold" onPress={() => Alert.alert('Live service', 'The next live service begins Sunday at 9:00 AM WAT.')} />
+            <ActionButton label="Watch live" icon="play" variant="gold" onPress={() => Alert.alert('Live service preview', 'Live streaming has not been connected yet. The scheduled service time is Sunday at 9:00 AM WAT.')} />
             <ActionButton label="Plan a visit" icon="location-outline" variant="ghost" onPress={() => navigate('branches')} />
           </View>
         </View>
@@ -396,7 +396,12 @@ export function SermonsScreen({ navigate }: { navigate: (screen: ScreenName) => 
   const colors = useColors();
   const [saved, setSaved] = useState<string[]>([]);
   const [query, setQuery] = useState('');
-  const filtered = useMemo(() => sermonData.filter((item) => `${item.title} ${item.speaker} ${item.series}`.toLowerCase().includes(query.toLowerCase())), [query]);
+  const [filter, setFilter] = useState('All');
+  // Current messages offer both video and audio; Saved restricts the collection.
+  const filtered = useMemo(() => sermonData.filter((item) =>
+    `${item.title} ${item.speaker} ${item.series}`.toLowerCase().includes(query.toLowerCase())
+    && (filter !== 'Saved' || saved.includes(item.title))
+  ), [query, filter, saved]);
   const toggleSave = (title: string) => setSaved((items) => items.includes(title) ? items.filter((item) => item !== title) : [...items, title]);
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -406,14 +411,14 @@ export function SermonsScreen({ navigate }: { navigate: (screen: ScreenName) => 
         <TextInput value={query} onChangeText={setQuery} placeholder="Search sermons, speakers, topics" placeholderTextColor={colors.mutedForeground} style={[styles.searchInput, { color: colors.foreground }]} />
       </View>
       <View style={styles.filterRow}>
-        {['All', 'Video', 'Audio', 'Saved'].map((filter, index) => <Pressable key={filter} onPress={() => filter === 'Saved' && setQuery('')} style={[styles.filterChip, { backgroundColor: index === 0 ? colors.primary : colors.card, borderColor: colors.border }]}><Text style={[styles.filterText, { color: index === 0 ? '#FFFFFF' : colors.foreground }]}>{filter}</Text></Pressable>)}
+        {['All', 'Video', 'Audio', 'Saved'].map((item) => <Pressable key={item} testID={`sermon-filter-${item.toLowerCase()}`} onPress={() => setFilter(item)} style={[styles.filterChip, { backgroundColor: filter === item ? colors.primary : colors.card, borderColor: colors.border }]}><Text style={[styles.filterText, { color: filter === item ? '#FFFFFF' : colors.foreground }]}>{item}</Text></Pressable>)}
       </View>
       <SectionHeader title="Featured messages" />
       {filtered.map((sermon, index) => (
-        <Pressable key={sermon.title} onPress={() => Alert.alert('Now playing', sermon.title)} style={({ pressed }) => [styles.sermonListCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}>
+        <Pressable key={sermon.title} onPress={() => Alert.alert('Sermon preview', `${sermon.title}\nMedia playback has not been connected yet.`)} style={({ pressed }) => [styles.sermonListCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}>
           <View style={[styles.listArtwork, { backgroundColor: sermon.color }]}><Text style={styles.artworkNumber}>0{index + 1}</Text><Ionicons name="play" size={16} color="#FFFFFF" /></View>
           <View style={styles.listCopy}><Text style={[styles.listTitle, { color: colors.foreground }]}>{sermon.title}</Text><Text style={[styles.listMeta, { color: colors.mutedForeground }]}>{sermon.series} · {sermon.speaker}</Text><Text style={[styles.listDuration, { color: colors.mutedForeground }]}>{sermon.duration}  ·  Video & audio</Text></View>
-          <Pressable onPress={() => toggleSave(sermon.title)} hitSlop={12}><Ionicons name={saved.includes(sermon.title) ? 'bookmark' : 'bookmark-outline'} size={20} color={saved.includes(sermon.title) ? colors.accent : colors.mutedForeground} /></Pressable>
+          <Pressable accessibilityLabel={`Save ${sermon.title}`} onPress={(event) => { event.stopPropagation(); toggleSave(sermon.title); }} hitSlop={12}><Ionicons name={saved.includes(sermon.title) ? 'bookmark' : 'bookmark-outline'} size={20} color={saved.includes(sermon.title) ? colors.accent : colors.mutedForeground} /></Pressable>
         </Pressable>
       ))}
       {filtered.length === 0 ? <EmptyState icon="search-outline" title="No messages found" body="Try another speaker, topic, or series." /> : null}
@@ -437,7 +442,7 @@ export function GiveScreen() {
     }
     await AsyncStorage.setItem('royalhouse-last-gift', JSON.stringify({ category, amount: numericAmount, recurring, frequency }));
     setSaved(true);
-    Alert.alert('Giving prepared', `Your ${category.toLowerCase()} gift of $${numericAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} is ready for secure checkout.`);
+    Alert.alert('Giving preview', `Selected ${category.toLowerCase()} amount: $${numericAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.\nCheckout has not been connected. No payment has been processed.`);
   };
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -468,12 +473,13 @@ export function GiveScreen() {
   );
 }
 
-function EventsScreen() {
+export function EventsScreen({ close }: { close: () => void }) {
   const colors = useColors();
   const [registered, setRegistered] = useState<string[]>([]);
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <SimplePageHeader eyebrow="GATHER TOGETHER" title="Events & moments" subtitle="There is something powerful about doing life and faith together." />
+      <ActionButton label="Back home" icon="arrow-back" variant="outline" onPress={close} />
       <View style={[styles.calendarBanner, { backgroundColor: colors.primary }]}><View><Text style={styles.calendarEyebrow}>NEXT GLOBAL GATHERING</Text><Text style={styles.calendarTitle}>Global Worship Service</Text><Text style={styles.calendarMeta}>Sunday, 16 August · 9:00 AM WAT</Text></View><Ionicons name="calendar" size={35} color={colors.accent} /></View>
       <SectionHeader title="Upcoming events" action="My calendar" onPress={() => Alert.alert('My calendar', 'You have no saved events yet.')} />
       {eventData.map((event) => <EventRow key={event.title} event={event} registered={registered.includes(event.title)} onPress={() => setRegistered((items) => items.includes(event.title) ? items.filter((item) => item !== event.title) : [...items, event.title])} />)}
@@ -781,7 +787,7 @@ function PrayerScreen({ close }: { close: () => void }) {
     }
     await AsyncStorage.setItem(`royalhouse-prayer-${Date.now()}`, JSON.stringify({ request, privateRequest }));
     setRequest('');
-    Alert.alert('Prayer request received', 'Our prayer team will stand with you. You are not alone.', [{ text: 'Done', onPress: close }]);
+    Alert.alert('Prayer request preview', 'Prayer-team delivery has not been connected yet. This request has not been submitted.', [{ text: 'Done', onPress: close }]);
   };
   return <Modal animationType="slide" visible onRequestClose={close}><ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.scrollContent, { paddingTop: 64 }]} keyboardShouldPersistTaps="handled">
     <Pressable onPress={close} style={styles.closeButton}><Ionicons name="close" size={23} color={colors.foreground} /></Pressable>
@@ -961,22 +967,28 @@ function EmptyState({ icon, title, body }: { icon: IconName; title: string; body
 }
 
 export default function HomeTab() {
-  const [screen, setScreen] = useState<ScreenName>('home');
-  const navigate = (next: ScreenName) => setScreen(next);
-  if (screen === 'prayer') return <PrayerScreen close={() => setScreen('home')} />;
-  if (screen === 'ministries') return <MinistriesScreen close={() => setScreen('home')} />;
-  if (screen === 'branches') return <BranchesScreen close={() => setScreen('home')} />;
-  if (screen === 'admin') return <AdminDashboardScreen close={() => setScreen('home')} />;
+  const router = useRouter();
+  const { view } = useLocalSearchParams<{ view?: ScreenName }>();
+  const screen = view || 'home';
+  const navigate = (next: ScreenName) => {
+    if (next === 'home') router.replace('/');
+    else if (next === 'events') router.push('./events');
+    else router.push({ pathname: '/', params: { view: next } });
+  };
+  if (screen === 'prayer') return <PrayerScreen close={() => navigate('home')} />;
+  if (screen === 'ministries') return <MinistriesScreen close={() => navigate('home')} />;
+  if (screen === 'branches') return <BranchesScreen close={() => navigate('home')} />;
+  if (screen === 'admin') return <AdminDashboardScreen close={() => navigate('home')} />;
   if (screen === 'sermons') return <SermonsScreen navigate={navigate} />;
   if (screen === 'give') return <GiveScreen />;
-  if (screen === 'events') return <EventsScreen />;
+  if (screen === 'events') return <EventsScreen close={() => navigate('home')} />;
   if (screen === 'profile') return <ProfileScreen navigate={navigate} />;
   return <HomeScreen navigate={navigate} />;
 }
 
 const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 20 },
-  bottomSpacer: { height: 72 },
+  bottomSpacer: { height: 112 },
   topBar: { paddingHorizontal: 20, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
   brandRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9 },
   headerLogo: { width: 39, height: 39, borderRadius: 8, backgroundColor: '#090D18' },
