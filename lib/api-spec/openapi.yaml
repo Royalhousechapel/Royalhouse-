@@ -72,6 +72,136 @@ paths:
           description: Authentication required
         "403":
           description: Authenticated account has no active admin assignment
+  /admin/role-config:
+    get:
+      operationId: getAdminRoleConfig
+      tags: [admin]
+      summary: List configured departments, roles, and supported permissions
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Department and role configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRoleConfig"
+        "403":
+          description: Super Admin access required
+  /admin/departments:
+    post:
+      operationId: createAdminDepartment
+      tags: [admin]
+      summary: Create a department for role configuration
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDepartmentCreateRequest"
+      responses:
+        "201":
+          description: Department created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDepartment"
+        "400":
+          description: Invalid department
+        "403":
+          description: Super Admin access required
+  /admin/departments/{id}:
+    patch:
+      operationId: updateAdminDepartment
+      tags: [admin]
+      summary: Rename or deactivate a department
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDepartmentUpdateRequest"
+      responses:
+        "200":
+          description: Department updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDepartment"
+        "400":
+          description: Invalid department
+        "403":
+          description: Super Admin access required
+        "404":
+          description: Department not found
+        "409":
+          description: Department still has active administrator assignments
+  /admin/roles:
+    post:
+      operationId: createAdminRole
+      tags: [admin]
+      summary: Create a department role with configured module permissions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRoleCreateRequest"
+      responses:
+        "201":
+          description: Role created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRole"
+        "400":
+          description: Invalid role
+        "403":
+          description: Super Admin access required
+  /admin/roles/{id}:
+    patch:
+      operationId: updateAdminRole
+      tags: [admin]
+      summary: Edit or deactivate a department role
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRoleUpdateRequest"
+      responses:
+        "200":
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRole"
+        "400":
+          description: Invalid role
+        "403":
+          description: Super Admin access required
+        "404":
+          description: Role not found
+        "409":
+          description: Role has active administrator assignments or is protected
   /admin/users:
     get:
       operationId: listAdminUsers
@@ -239,6 +369,206 @@ paths:
           description: Insufficient permissions
         "404":
           description: Branch not found
+  /admin/members:
+    get:
+      operationId: listAdminMembers
+      tags: [admin]
+      summary: Search real member profiles in the role's authorized scope
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Matching member profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConnectPerson"
+        "403":
+          description: Members access required
+    post:
+      operationId: createAdminMember
+      tags: [admin]
+      summary: Add a member profile to the shared people records
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMemberInput"
+      responses:
+        "201":
+          description: Member profile created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectPerson"
+        "400":
+          description: Invalid member
+        "403":
+          description: Member creation permission required
+  /admin/members/{id}:
+    patch:
+      operationId: updateAdminMember
+      tags: [admin]
+      summary: Update a member profile in the shared people records
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMemberUpdateRequest"
+      responses:
+        "200":
+          description: Member profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectPerson"
+        "400":
+          description: Invalid member
+        "403":
+          description: Member update permission required
+        "404":
+          description: Member not found
+  /admin/department-tasks:
+    get:
+      operationId: listDepartmentTasks
+      tags: [admin]
+      summary: List real tasks for the effective role's department scope
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Department task records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DepartmentTask"
+        "403":
+          description: Department task access required
+    post:
+      operationId: createDepartmentTask
+      tags: [admin]
+      summary: Create a shared department task
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentTaskInput"
+      responses:
+        "201":
+          description: Department task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepartmentTask"
+        "400":
+          description: Invalid task
+        "403":
+          description: Task management permission required
+  /admin/department-tasks/{id}/complete:
+    post:
+      operationId: completeDepartmentTask
+      tags: [admin]
+      summary: Mark a department task complete
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Completed task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepartmentTask"
+        "403":
+          description: Task management permission required
+        "404":
+          description: Task not found
+  /admin/audit-logs:
+    get:
+      operationId: listAdminAuditLogs
+      tags: [admin]
+      summary: Read recent administrative activity
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Recent audit records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAuditLog"
+        "403":
+          description: Audit log permission required
+  /admin/connect/notifications:
+    get:
+      operationId: listConnectNotifications
+      tags: [connect]
+      summary: List recent notifications for the signed-in Connect Team account
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The current account's Connect Team notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConnectNotification"
+        "403":
+          description: Connect Team module access required
+  /admin/connect/notifications/{id}/read:
+    post:
+      operationId: markConnectNotificationRead
+      tags: [connect]
+      summary: Mark one of the signed-in account's notifications as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectNotification"
+        "403":
+          description: The notification belongs to another account
+        "404":
+          description: Notification not found
   /admin/connect/options:
     get:
       operationId: listConnectWorkflowOptions
@@ -507,42 +837,97 @@ components:
         archived: { type: boolean }
     AdminProfile:
       type: object
-      required: [clerkUserId, role, modules]
+      required: [clerkUserId, role, effectiveRole, modules, capabilities]
       properties:
         clerkUserId: { type: string }
         role: { type: string }
+        effectiveRole: { type: string }
         branchId: { type: ["string", "null"] }
         modules:
           type: array
           items: { type: string }
+        capabilities:
+          type: array
+          items: { type: string }
+    AdminDepartment:
+      type: object
+      required: [id, name, active, roles]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        active: { type: boolean }
+        roles:
+          type: array
+          items: { $ref: "#/components/schemas/AdminRole" }
+    AdminRole:
+      type: object
+      required: [id, departmentId, name, modules, capabilities, grantable, active, system]
+      properties:
+        id: { type: string }
+        departmentId: { type: string }
+        name: { type: string }
+        modules:
+          type: array
+          items: { type: string }
+        capabilities:
+          type: array
+          items: { type: string }
+        grantable: { type: boolean }
+        active: { type: boolean }
+        system: { type: boolean }
+    AdminRoleConfig:
+      type: object
+      required: [departments, availableModules, availableCapabilities]
+      properties:
+        departments:
+          type: array
+          items: { $ref: "#/components/schemas/AdminDepartment" }
+        availableModules:
+          type: array
+          items: { type: string }
+        availableCapabilities:
+          type: array
+          items: { type: string }
+    AdminDepartmentCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+    AdminDepartmentUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        active: { type: boolean }
+    AdminRoleCreateRequest:
+      type: object
+      required: [departmentId, name, modules, capabilities]
+      properties:
+        departmentId: { type: string }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        modules:
+          type: array
+          items: { type: string }
+        capabilities:
+          type: array
+          items: { type: string }
+        grantable: { type: boolean }
+    AdminRoleUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        departmentId: { type: string }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        modules:
+          type: array
+          items: { type: string }
+        capabilities:
+          type: array
+          items: { type: string }
+        grantable: { type: boolean }
+        active: { type: boolean }
     AdminUserRole:
       type: string
-      enum:
-        - Super Admin
-        - Headquarters Admin
-        - Regional Admin
-        - Branch Admin
-        - Pastor
-        - Pastoral Leadership
-        - Church Administrator
-        - Connect Team Leader
-        - Connect Team Member
-        - Ministry Leader
-        - Finance Team
-        - Media Team
-        - Store Manager
-        - Finance Administrator
-        - Finance Team Member
-        - Foundation School Administrator
-        - Foundation School Team Member
-        - Ministries Administrator
-        - Media Administrator
-        - Media Team Member
-        - Events Administrator
-        - Events Team Member
-        - Communications Administrator
-        - Membership Administrator
-        - Branch Administrator
     AdminUser:
       type: object
       required: [clerkUserId, role, active]
@@ -571,6 +956,55 @@ components:
       properties:
         role: { $ref: "#/components/schemas/AdminUserRole" }
         active: { type: boolean }
+    AdminMemberInput:
+      type: object
+      required: [fullName]
+      properties:
+        fullName: { type: string, minLength: 1, maxLength: 140 }
+        phone: { type: string, maxLength: 60 }
+        email: { type: string, maxLength: 180 }
+        branchId: { type: ["string", "null"] }
+        notes: { type: string, maxLength: 2000 }
+    AdminMemberUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        fullName: { type: string, minLength: 1, maxLength: 140 }
+        phone: { type: ["string", "null"], maxLength: 60 }
+        email: { type: ["string", "null"], maxLength: 180 }
+        branchId: { type: ["string", "null"] }
+        notes: { type: ["string", "null"], maxLength: 2000 }
+    DepartmentTask:
+      type: object
+      required: [id, departmentId, title, status, createdByClerkUserId, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        departmentId: { type: string }
+        title: { type: string }
+        description: { type: ["string", "null"] }
+        status: { type: string }
+        dueAt: { type: ["string", "null"], format: date-time }
+        createdByClerkUserId: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    DepartmentTaskInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 160 }
+        description: { type: string, maxLength: 2000 }
+        dueAt: { type: string, format: date-time }
+    AdminAuditLog:
+      type: object
+      required: [id, clerkUserId, action, entityType, createdAt]
+      properties:
+        id: { type: string }
+        clerkUserId: { type: string }
+        action: { type: string }
+        entityType: { type: string }
+        entityId: { type: ["string", "null"] }
+        details: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
     ConnectPerson:
       type: object
       required: [id, personType, fullName, visitorStatus, membershipStatus, foundationSchoolStatus, pastoralFollowUp, tags, createdAt, updatedAt]
@@ -618,6 +1052,18 @@ components:
         tags:
           type: array
           items: { type: string }
+    ConnectNotification:
+      type: object
+      required: [id, notificationType, title, body, createdAt]
+      properties:
+        id: { type: string }
+        notificationType: { type: string }
+        title: { type: string }
+        body: { type: string }
+        entityType: { type: ["string", "null"] }
+        entityId: { type: ["string", "null"] }
+        readAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
     ConnectAssignment:
       type: object
       required: [id, personId, assignedClerkUserId, assignedByClerkUserId, status, createdAt, updatedAt]
@@ -735,4 +1181,3 @@ components:
         followUps:
           type: array
           items: { $ref: "#/components/schemas/ConnectFollowUp" }
-

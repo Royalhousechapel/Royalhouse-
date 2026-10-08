@@ -1,28 +1,25 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Alert } from '@/utils/alert';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  AdminUserRole,
   getListAdminUsersQueryKey,
   useGrantAdminAccess,
   useListAdminUsers,
   useUpdateAdminUser,
 } from '@workspace/api-client-react';
-import type { AdminUser, AdminUserRole as AdminUserRoleType } from '@workspace/api-client-react';
+import type { AdminUser } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useColors } from '@/hooks/useColors';
 
-const assignableRoles = Object.values(AdminUserRole);
-
-export function AdminUsersRolesWorkspace() {
+export function AdminUsersRolesWorkspace({ assignableRoles }: { assignableRoles: string[] }) {
   const colors = useColors();
   const queryClient = useQueryClient();
   const usersQuery = useListAdminUsers();
   const grantAccess = useGrantAdminAccess();
   const updateUser = useUpdateAdminUser();
   const [email, setEmail] = useState('');
-  const [grantRole, setGrantRole] = useState<AdminUserRoleType>('Branch Administrator');
+  const [grantRole, setGrantRole] = useState(assignableRoles[0] ?? '');
   const [filter, setFilter] = useState('');
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -30,6 +27,9 @@ export function AdminUsersRolesWorkspace() {
   const users = usersQuery.data ?? [];
   const editingUser = users.find((user) => user.clerkUserId === editingUserId);
   const modalRole = editingUser?.role ?? grantRole;
+  useEffect(() => {
+    if (!assignableRoles.includes(grantRole)) setGrantRole(assignableRoles[0] ?? '');
+  }, [assignableRoles, grantRole]);
   const filteredUsers = useMemo(() => {
     const needle = filter.trim().toLowerCase();
     if (!needle) return users;
@@ -57,7 +57,7 @@ export function AdminUsersRolesWorkspace() {
     }
   };
 
-  const chooseRole = async (role: AdminUserRoleType) => {
+  const chooseRole = async (role: string) => {
     setRoleModalOpen(false);
     if (!editingUserId) {
       setGrantRole(role);
@@ -125,15 +125,16 @@ export function AdminUsersRolesWorkspace() {
         <Text style={[styles.label, { color: colors.foreground }]}>Role</Text>
         <Pressable
           onPress={() => { setEditingUserId(null); setRoleModalOpen(true); }}
+          disabled={assignableRoles.length === 0}
           style={[styles.roleButton, { backgroundColor: colors.background, borderColor: colors.border }]}
         >
-          <Text style={[styles.roleButtonText, { color: colors.foreground }]}>{grantRole}</Text>
+          <Text style={[styles.roleButtonText, { color: colors.foreground }]}>{grantRole || 'No assignable roles configured'}</Text>
           <Ionicons name="chevron-down" size={17} color={colors.accent} />
         </Pressable>
         <Pressable
           onPress={() => void grant()}
-          disabled={grantAccess.isPending}
-          style={[styles.primaryButton, { backgroundColor: colors.primary }, grantAccess.isPending && styles.disabled]}
+          disabled={grantAccess.isPending || !grantRole}
+          style={[styles.primaryButton, { backgroundColor: colors.primary }, (grantAccess.isPending || !grantRole) && styles.disabled]}
         >
           <Ionicons name="person-add-outline" size={17} color="#FFFFFF" />
           <Text style={styles.primaryButtonText}>{grantAccess.isPending ? 'Saving…' : 'Grant or update access'}</Text>

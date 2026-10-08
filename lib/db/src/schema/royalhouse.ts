@@ -1,5 +1,6 @@
 import {
   boolean,
+  jsonb,
   pgTable,
   real,
   text,
@@ -33,6 +34,27 @@ export const adminAssignmentsTable = pgTable("royalhouse_admin_assignments", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const adminDepartmentsTable = pgTable("royalhouse_admin_departments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const adminRolesTable = pgTable("royalhouse_admin_roles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  departmentId: uuid("department_id").notNull().references(() => adminDepartmentsTable.id),
+  name: text("name").notNull().unique(),
+  modules: jsonb("modules").$type<string[]>().notNull().default([]),
+  capabilities: jsonb("capabilities").$type<string[]>().notNull().default([]),
+  grantable: boolean("grantable").notNull().default(false),
+  active: boolean("active").notNull().default(true),
+  system: boolean("system").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const auditLogTable = pgTable("royalhouse_audit_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
   clerkUserId: text("clerk_user_id").notNull(),
@@ -41,6 +63,18 @@ export const auditLogTable = pgTable("royalhouse_audit_logs", {
   entityId: text("entity_id"),
   details: text("details"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const departmentTasksTable = pgTable("royalhouse_department_tasks", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  departmentId: uuid("department_id").notNull().references(() => adminDepartmentsTable.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("open"),
+  dueAt: timestamp("due_at", { withTimezone: true }),
+  createdByClerkUserId: text("created_by_clerk_user_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const peopleTable = pgTable("royalhouse_people", {
@@ -132,8 +166,10 @@ export const notificationsTable = pgTable("royalhouse_notifications", {
 
 export type BranchRecord = typeof branchesTable.$inferSelect;
 export type AdminAssignment = typeof adminAssignmentsTable.$inferSelect;
+export type AdminRoleConfigRecord = typeof adminRolesTable.$inferSelect;
 export type PersonRecord = typeof peopleTable.$inferSelect;
 export type ConnectAssignment = typeof connectAssignmentsTable.$inferSelect;
 export type ConnectInteraction = typeof connectInteractionsTable.$inferSelect;
 export type ConnectFollowUp = typeof connectFollowUpsTable.$inferSelect;
 export type WorkflowOption = typeof workflowOptionsTable.$inferSelect;
+export type DepartmentTask = typeof departmentTasksTable.$inferSelect;

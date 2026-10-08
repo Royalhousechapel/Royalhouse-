@@ -97,42 +97,24 @@ export interface BranchUpdate {
 export interface AdminProfile {
   clerkUserId: string;
   role: string;
+  effectiveRole: string;
   /** @nullable */
   branchId?: string | null;
   modules: string[];
+  capabilities: string[];
 }
 
-export type AdminUserRole = typeof AdminUserRole[keyof typeof AdminUserRole];
-
-
-export const AdminUserRole = {
-  Super_Admin: 'Super Admin',
-  Headquarters_Admin: 'Headquarters Admin',
-  Regional_Admin: 'Regional Admin',
-  Branch_Admin: 'Branch Admin',
-  Pastor: 'Pastor',
-  Pastoral_Leadership: 'Pastoral Leadership',
-  Church_Administrator: 'Church Administrator',
-  Connect_Team_Leader: 'Connect Team Leader',
-  Connect_Team_Member: 'Connect Team Member',
-  Ministry_Leader: 'Ministry Leader',
-  Finance_Team: 'Finance Team',
-  Media_Team: 'Media Team',
-  Store_Manager: 'Store Manager',
-  Finance_Administrator: 'Finance Administrator',
-  Finance_Team_Member: 'Finance Team Member',
-  Foundation_School_Administrator: 'Foundation School Administrator',
-  Foundation_School_Team_Member: 'Foundation School Team Member',
-  Ministries_Administrator: 'Ministries Administrator',
-  Media_Administrator: 'Media Administrator',
-  Media_Team_Member: 'Media Team Member',
-  Events_Administrator: 'Events Administrator',
-  Events_Team_Member: 'Events Team Member',
-  Communications_Administrator: 'Communications Administrator',
-  Membership_Administrator: 'Membership Administrator',
-  Branch_Administrator: 'Branch Administrator',
-} as const;
-
+export interface AdminRole {
+  id: string;
+  departmentId: string;
+  name: string;
+  modules: string[];
+  capabilities: string[];
+  grantable: boolean;
+  active: boolean;
+  system: boolean;
+}
+export type AdminUserRole = string;
 export interface AdminUser {
   clerkUserId: string;
   /** @nullable */
@@ -159,6 +141,21 @@ export interface AdminUserUpdate {
   active?: boolean;
 }
 
+export interface AdminMemberInput {
+  /**
+     * @minLength 1
+     * @maxLength 140
+     */
+  fullName: string;
+  /** @maxLength 60 */
+  phone?: string;
+  /** @maxLength 180 */
+  email?: string;
+  /** @nullable */
+  branchId?: string | null;
+  /** @maxLength 2000 */
+  notes?: string;
+}
 export interface ConnectPerson {
   id: string;
   /** @nullable */
@@ -211,6 +208,19 @@ export interface ConnectPersonInput {
   tags?: string[];
 }
 
+export interface ConnectNotification {
+  id: string;
+  notificationType: string;
+  title: string;
+  body: string;
+  /** @nullable */
+  entityType?: string | null;
+  /** @nullable */
+  entityId?: string | null;
+  /** @nullable */
+  readAt?: string | null;
+  createdAt: string;
+}
 export interface ConnectAssignment {
   id: string;
   personId: string;
@@ -315,7 +325,127 @@ export interface LogConnectInteractionResult {
   followUps: ConnectFollowUp[];
 }
 
+export type ListAdminMembersParams = {
+search?: string;
+};
 export type ListConnectPeopleParams = {
 search?: string;
 };
 
+
+export interface AdminDepartmentCreateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+}
+
+export interface DepartmentTask {
+  id: string;
+  departmentId: string;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  status: string;
+  /** @nullable */
+  dueAt?: string | null;
+  createdByClerkUserId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminRoleCreateRequest {
+  departmentId: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  modules: string[];
+  capabilities: string[];
+  grantable?: boolean;
+}
+
+export interface AdminDepartmentUpdateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  active?: boolean;
+}
+
+export interface AdminMemberUpdateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 140
+     */
+  fullName?: string;
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  phone?: string | null;
+  /**
+     * @maxLength 180
+     * @nullable
+     */
+  email?: string | null;
+  /** @nullable */
+  branchId?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export interface AdminDepartment {
+  id: string;
+  name: string;
+  active: boolean;
+  roles: AdminRole[];
+}
+
+export interface AdminRoleUpdateRequest {
+  departmentId?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name?: string;
+  modules?: string[];
+  capabilities?: string[];
+  grantable?: boolean;
+  active?: boolean;
+}
+
+export interface DepartmentTaskInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  /** @maxLength 2000 */
+  description?: string;
+  dueAt?: string;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  clerkUserId: string;
+  action: string;
+  entityType: string;
+  /** @nullable */
+  entityId?: string | null;
+  /** @nullable */
+  details?: string | null;
+  createdAt: string;
+}
+
+export interface AdminRoleConfig {
+  departments: AdminDepartment[];
+  availableModules: string[];
+  availableCapabilities: string[];
+}

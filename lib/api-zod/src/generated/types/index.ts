@@ -6,7 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminAuditLog';
+export * from './adminDepartment';
+export * from './adminDepartmentCreateRequest';
+export * from './adminDepartmentUpdateRequest';
+export * from './adminMemberInput';
+export * from './adminMemberUpdateRequest';
 export * from './adminProfile';
+export * from './adminRole';
+export * from './adminRoleConfig';
+export * from './adminRoleCreateRequest';
+export * from './adminRoleUpdateRequest';
 export * from './adminUser';
 export * from './adminUserGrant';
 export * from './adminUserList';
@@ -21,11 +31,15 @@ export * from './branchUpdate';
 export * from './connectAssignment';
 export * from './connectFollowUp';
 export * from './connectInteraction';
+export * from './connectNotification';
 export * from './connectPerson';
 export * from './connectPersonInput';
 export * from './connectPersonProfile';
 export * from './connectSummary';
+export * from './departmentTask';
+export * from './departmentTaskInput';
 export * from './healthStatus';
+export * from './listAdminMembersParams';
 export * from './listConnectPeopleParams';
 export * from './logConnectInteractionRequest';
 export * from './logConnectInteractionResult';

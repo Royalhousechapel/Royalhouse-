@@ -18,26 +18,18 @@ import {
   GetConnectSummaryResponse,
   CreateConnectPersonBody,
   CreateConnectPersonResponse,
+  ListConnectNotificationsResponse,
+  MarkConnectNotificationReadParams,
+  MarkConnectNotificationReadResponse,
   ListConnectWorkflowOptionsResponse,
   ListConnectPeopleResponse,
   LogConnectInteractionBody,
   LogConnectInteractionResponse,
 } from "@workspace/api-zod";
-import { requireAdmin, requireModule, type AdminRequest } from "../middlewares/adminAuth";
+import { requireAdmin, requireCapability, requireModule, type AdminRequest } from "../middlewares/adminAuth";
 
 const router: IRouter = Router();
 router.use(requireAdmin, requireModule("Connect Team"));
-
-const broadConnectRoles = new Set([
-  "Super Admin",
-  "Headquarters Admin",
-  "Regional Admin",
-  "Branch Admin",
-  "Pastor",
-  "Pastoral Leadership",
-  "Church Administrator",
-  "Connect Team Leader",
-]);
 
 function paramId(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] : value ?? "";
@@ -60,7 +52,7 @@ function parseJsonArray(value: string | null | undefined): string[] {
 }
 
 async function scopedPersonIds(req: AdminRequest): Promise<string[] | null> {
-  if (broadConnectRoles.has(req.admin?.role ?? "")) return null;
+  if (req.adminCapabilities?.includes("connect.view_all")) return null;
   const assignments = await db
     .select({ personId: connectAssignmentsTable.personId })
     .from(connectAssignmentsTable)
@@ -170,7 +162,39 @@ router.get("/admin/connect/summary", async (req: AdminRequest, res): Promise<voi
   }));
 });
 
-router.post("/admin/connect/people", async (req: AdminRequest, res): Promise<void> => {
+router.get("/admin/connect/notifications", async (req: AdminRequest, res): Promise<void> => {
+  const notifications = await db.select().from(notificationsTable)
+    .where(eq(notificationsTable.recipientClerkUserId, req.userId!))
+    .orderBy(desc(notificationsTable.createdAt))
+    .limit(50);
+  res.json(ListConnectNotificationsResponse.parse(notifications));
+});
+
+router.post("/admin/connect/notifications/:id/read", async (req: AdminRequest, res): Promise<void> => {
+  const parsedParams = MarkConnectNotificationReadParams.safeParse(req.params);
+  if (!parsedParams.success) {
+    res.status(400).json({ error: "Provide a valid notification ID." });
+    return;
+  }
+  const [notification] = await db.update(notificationsTable)
+    .set({ readAt: new Date() })
+    .where(and(
+      eq(notificationsTable.id, parsedParams.data.id),
+      eq(notificationsTable.recipientClerkUserId, req.userId!),
+    ))
+    .returning();
+  if (!notification) {
+    const [exists] = await db.select({ id: notificationsTable.id })
+      .from(notificationsTable)
+      .where(eq(notificationsTable.id, parsedParams.data.id))
+      .limit(1);
+    res.status(exists ? 403 : 404).json({ error: exists ? "This notification belongs to another account." : "Notification not found." });
+    return;
+  }
+  res.json(MarkConnectNotificationReadResponse.parse(notification));
+});
+
+router.post("/admin/connect/people", requireCapability("connect.create_people"), async (req: AdminRequest, res): Promise<void> => {
   const parsed = CreateConnectPersonBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -217,11 +241,7 @@ router.get("/admin/connect/people/:id", async (req: AdminRequest, res): Promise<
   }));
 });
 
-router.post("/admin/connect/people/:id/assign", async (req: AdminRequest, res): Promise<void> => {
-  if (!broadConnectRoles.has(req.admin?.role ?? "")) {
-    res.status(403).json({ error: "Only Connect Team leaders and administrators can assign people" });
-    return;
-  }
+router.post("/admin/connect/people/:id/assign", requireCapability("connect.assign"), async (req: AdminRequest, res): Promise<void> => {
   const personId = paramId(req.params.id);
   const parsed = AssignConnectPersonBody.safeParse(req.body);
   if (!parsed.success) {
@@ -231,6 +251,10 @@ router.post("/admin/connect/people/:id/assign", async (req: AdminRequest, res): 
   const [person] = await db.select({ id: peopleTable.id }).from(peopleTable).where(eq(peopleTable.id, personId)).limit(1);
   if (!person) {
     res.status(404).json({ error: "Person not found" });
+    return;
+  }
+  if (!(await assertPersonAccess(req, personId))) {
+    res.status(403).json({ error: "This person is outside your Connect Team assignment scope" });
     return;
   }
   await db.update(connectAssignmentsTable)
@@ -260,7 +284,7 @@ router.post("/admin/connect/people/:id/assign", async (req: AdminRequest, res): 
   res.status(201).json(AssignConnectPersonResponse.parse(assignment));
 });
 
-router.post("/admin/connect/people/:id/interactions", async (req: AdminRequest, res): Promise<void> => {
+router.post("/admin/connect/people/:id/interactions", requireCapability("connect.log_interactions"), async (req: AdminRequest, res): Promise<void> => {
   const personId = paramId(req.params.id);
   if (!(await assertPersonAccess(req, personId))) {
     res.status(403).json({ error: "This person is outside your Connect Team assignment scope" });
@@ -359,7 +383,7 @@ router.post("/admin/connect/people/:id/interactions", async (req: AdminRequest, 
   }));
 });
 
-router.post("/admin/connect/follow-ups/:id/complete", async (req: AdminRequest, res): Promise<void> => {
+router.post("/admin/connect/follow-ups/:id/complete", requireCapability("connect.complete_follow_ups"), async (req: AdminRequest, res): Promise<void> => {
   const followUpId = paramId(req.params.id);
   const [followUp] = await db.select().from(connectFollowUpsTable).where(eq(connectFollowUpsTable.id, followUpId)).limit(1);
   if (!followUp) {

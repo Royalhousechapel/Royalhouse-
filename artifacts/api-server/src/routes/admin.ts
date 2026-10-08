@@ -17,27 +17,22 @@ import {
 } from "@workspace/api-zod";
 import {
   adminAssignmentsTable,
+  adminDepartmentsTable,
+  adminRolesTable,
   auditLogTable,
   branchesTable,
   db,
 } from "@workspace/db";
 import {
-  adminModulePermissions,
   requireAdmin,
+  requireCapability,
   requireModule,
+  requireSuperAdmin,
   type AdminRequest,
 } from "../middlewares/adminAuth";
 
 const router: IRouter = Router();
 router.use(requireAdmin);
-
-function requireSuperAdmin(req: AdminRequest, res: Response, next: NextFunction): void {
-  if (req.actualAdmin?.role !== "Super Admin" || req.admin?.role !== "Super Admin") {
-    res.status(403).json({ error: "Super Admin access required" });
-    return;
-  }
-  next();
-}
 
 function clerkUserToAdminUser(user: User | null, assignment: typeof adminAssignmentsTable.$inferSelect) {
   const primaryEmail =
@@ -91,8 +86,10 @@ router.get("/admin/me", (req: AdminRequest, res): void => {
   res.json(GetAdminProfileResponse.parse({
     clerkUserId: admin.clerkUserId,
     role: req.actualAdmin?.role ?? admin.role,
+    effectiveRole: admin.role,
     branchId: admin.branchId,
-    modules: adminModulePermissions[req.admin?.role ?? admin.role],
+    modules: req.adminModules ?? [],
+    capabilities: req.adminCapabilities ?? [],
   }));
 });
 
@@ -116,6 +113,19 @@ router.post("/admin/users", requireModule("Users & Roles"), requireSuperAdmin, a
   }
 
   const email = parsed.data.email.trim().toLowerCase();
+  const [selectedRole] = await db.select({ role: adminRolesTable, departmentActive: adminDepartmentsTable.active })
+    .from(adminRolesTable)
+    .innerJoin(adminDepartmentsTable, eq(adminRolesTable.departmentId, adminDepartmentsTable.id))
+    .where(and(
+      eq(adminRolesTable.name, parsed.data.role),
+      eq(adminRolesTable.active, true),
+      eq(adminDepartmentsTable.active, true),
+    ))
+    .limit(1);
+  if (!selectedRole?.role.grantable) {
+    res.status(400).json({ error: "Choose an active role that can be granted administrator access." });
+    return;
+  }
   let matchingUsers: User[];
   try {
     const result = await clerkClient.users.getUserList({ emailAddress: [email], limit: 10 });
@@ -181,6 +191,21 @@ router.patch("/admin/users/:clerkUserId", requireModule("Users & Roles"), requir
     res.status(400).json({ error: "Provide a valid Clerk user ID and at least one change." });
     return;
   }
+  if (parsedBody.data.role) {
+    const [selectedRole] = await db.select({ role: adminRolesTable, departmentActive: adminDepartmentsTable.active })
+      .from(adminRolesTable)
+      .innerJoin(adminDepartmentsTable, eq(adminRolesTable.departmentId, adminDepartmentsTable.id))
+      .where(and(
+        eq(adminRolesTable.name, parsedBody.data.role),
+        eq(adminRolesTable.active, true),
+        eq(adminDepartmentsTable.active, true),
+      ))
+      .limit(1);
+    if (!selectedRole?.role.grantable) {
+      res.status(400).json({ error: "Choose an active role that can be granted administrator access." });
+      return;
+    }
+  }
 
   const result = await db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(539214701)`);
@@ -226,7 +251,7 @@ router.patch("/admin/users/:clerkUserId", requireModule("Users & Roles"), requir
   }
 });
 
-router.post("/admin/branches", requireModule("Branches"), async (req: AdminRequest, res): Promise<void> => {
+router.post("/admin/branches", requireModule("Branches"), requireCapability("branches.manage"), async (req: AdminRequest, res): Promise<void> => {
   const parsed = CreateBranchBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -246,7 +271,7 @@ router.post("/admin/branches", requireModule("Branches"), async (req: AdminReque
   res.status(201).json(CreateBranchResponse.parse(branch));
 });
 
-router.patch("/admin/branches/:id", requireModule("Branches"), async (req: AdminRequest, res): Promise<void> => {
+router.patch("/admin/branches/:id", requireModule("Branches"), requireCapability("branches.manage"), async (req: AdminRequest, res): Promise<void> => {
   const branchId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const parsed = UpdateBranchBody.safeParse(req.body);
   if (!parsed.success) {
@@ -271,7 +296,7 @@ router.patch("/admin/branches/:id", requireModule("Branches"), async (req: Admin
   res.json(UpdateBranchResponse.parse(branch));
 });
 
-router.post("/admin/branches/:id/archive", requireModule("Branches"), async (req: AdminRequest, res): Promise<void> => {
+router.post("/admin/branches/:id/archive", requireModule("Branches"), requireCapability("branches.manage"), async (req: AdminRequest, res): Promise<void> => {
   const branchId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const [branch] = await db.update(branchesTable)
     .set({ archived: true, updatedAt: new Date() })

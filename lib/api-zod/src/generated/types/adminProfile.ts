@@ -9,7 +9,9 @@
 export interface AdminProfile {
   clerkUserId: string;
   role: string;
+  effectiveRole: string;
   /** @nullable */
   branchId?: string | null;
   modules: string[];
+  capabilities: string[];
 }

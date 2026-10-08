@@ -1,4 +1,10 @@
-import { db, branchesTable, workflowOptionsTable } from "@workspace/db";
+import {
+  adminDepartmentsTable,
+  adminRolesTable,
+  branchesTable,
+  db,
+  workflowOptionsTable,
+} from "@workspace/db";
 
 const seedBranches = [
   ["International Headquarters (Ahenfie)", "Ghana", "Greater Accra Region", "Accra", "Oil Dome · Ring Road West · Accra, Ghana", "Headquarters leadership", 5.56, -0.2, true],
@@ -42,4 +48,122 @@ export async function seedRoyalhouseWorkflowOptions(): Promise<void> {
     category,
     triggerConfig: JSON.stringify(triggerConfig),
   }))).onConflictDoNothing({ target: workflowOptionsTable.code });
+}
+
+const seedDepartments = [
+  "Leadership",
+  "Administration",
+  "Connect Team",
+  "Finance",
+  "Foundation School",
+  "Ministries",
+  "Worship",
+  "Children's Ministry",
+  "Men Makers",
+  "Royal Ladies",
+  "WMG",
+  "SHEvolve",
+  "Media",
+  "Events",
+  "Communications",
+  "Membership",
+  "Branch Administration",
+  "Member",
+  "Visitor",
+] as const;
+
+type SeedRole = {
+  department: (typeof seedDepartments)[number];
+  name: string;
+  modules: string[];
+  capabilities?: string[];
+  grantable?: boolean;
+  system?: boolean;
+};
+
+const leadershipCapabilities = [
+  "members.create",
+  "members.update",
+  "connect.view_all",
+  "connect.create_people",
+  "connect.assign",
+  "connect.log_interactions",
+  "connect.complete_follow_ups",
+  "branches.manage",
+  "tasks.manage",
+  "tasks.view_all_departments",
+  "audit.view",
+];
+
+const connectLeaderCapabilities = [
+  "members.create",
+  "members.update",
+  "connect.view_all",
+  "connect.create_people",
+  "connect.assign",
+  "connect.log_interactions",
+  "connect.complete_follow_ups",
+  "tasks.manage",
+];
+
+const seedRoles: SeedRole[] = [
+  { department: "Leadership", name: "Super Admin", modules: ["Members", "Connect Team", "Branches", "Department Tasks", "Users & Roles", "Settings", "Audit Logs"], capabilities: leadershipCapabilities, grantable: true, system: true },
+  { department: "Leadership", name: "Headquarters Admin", modules: ["Members", "Connect Team", "Branches", "Department Tasks", "Audit Logs"], capabilities: leadershipCapabilities, grantable: true },
+  { department: "Leadership", name: "Regional Admin", modules: ["Members", "Connect Team", "Branches", "Department Tasks", "Audit Logs"], capabilities: leadershipCapabilities, grantable: true },
+  { department: "Leadership", name: "Branch Admin", modules: ["Members", "Connect Team", "Branches", "Department Tasks"], capabilities: connectLeaderCapabilities.filter((capability) => capability !== "tasks.view_all_departments"), grantable: true },
+  { department: "Leadership", name: "Pastor", modules: ["Members", "Connect Team", "Department Tasks"], capabilities: connectLeaderCapabilities, grantable: true },
+  { department: "Leadership", name: "Pastoral Leadership", modules: ["Members", "Connect Team", "Department Tasks", "Audit Logs"], capabilities: leadershipCapabilities.filter((capability) => capability !== "branches.manage" && capability !== "tasks.view_all_departments"), grantable: true },
+  { department: "Leadership", name: "Church Administrator", modules: ["Members", "Connect Team", "Branches", "Department Tasks"], capabilities: connectLeaderCapabilities.filter((capability) => capability !== "tasks.view_all_departments"), grantable: true },
+  { department: "Connect Team", name: "Connect Team Leader", modules: ["Members", "Connect Team", "Department Tasks"], capabilities: connectLeaderCapabilities, grantable: true },
+  { department: "Connect Team", name: "Connect Team Member", modules: ["Connect Team", "Department Tasks"], capabilities: ["connect.log_interactions", "connect.complete_follow_ups", "tasks.manage"], grantable: true },
+  { department: "Finance", name: "Finance Team", modules: ["Department Tasks", "Audit Logs"], capabilities: ["tasks.manage", "audit.view"], grantable: true },
+  { department: "Finance", name: "Finance Administrator", modules: ["Department Tasks", "Audit Logs"], capabilities: ["tasks.manage", "audit.view"], grantable: true },
+  { department: "Finance", name: "Finance Team Member", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Media", name: "Media Team", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Media", name: "Media Administrator", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Media", name: "Media Team Member", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Events", name: "Store Manager", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Foundation School", name: "Foundation School Administrator", modules: ["Members", "Department Tasks"], capabilities: ["members.create", "members.update", "tasks.manage"], grantable: true },
+  { department: "Foundation School", name: "Foundation School Team Member", modules: ["Members", "Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Ministries", name: "Ministry Leader", modules: ["Members", "Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Ministries", name: "Ministries Administrator", modules: ["Members", "Department Tasks"], capabilities: ["members.create", "members.update", "tasks.manage"], grantable: true },
+  { department: "Ministries", name: "Ministry Administrator", modules: ["Members", "Department Tasks"], capabilities: ["members.create", "members.update", "tasks.manage"], grantable: true },
+  { department: "Administration", name: "Administration Team Member", modules: ["Members", "Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Worship", name: "Worship Leader", modules: ["Members", "Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Worship", name: "Worship Team Member", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Children's Ministry", name: "Children's Ministry Leader", modules: ["Members", "Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Children's Ministry", name: "Children's Ministry Team Member", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Men Makers", name: "Men Makers Leader", modules: ["Members", "Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Men Makers", name: "Men Makers Team Member", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Royal Ladies", name: "Royal Ladies Leader", modules: ["Members", "Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Royal Ladies", name: "Royal Ladies Team Member", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "WMG", name: "WMG Leader", modules: ["Members", "Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "WMG", name: "WMG Team Member", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "SHEvolve", name: "SHEvolve Leader", modules: ["Members", "Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "SHEvolve", name: "SHEvolve Team Member", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Events", name: "Events Administrator", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Events", name: "Events Team Member", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Communications", name: "Communications Administrator", modules: ["Department Tasks"], capabilities: ["tasks.manage"], grantable: true },
+  { department: "Membership", name: "Membership Administrator", modules: ["Members", "Department Tasks"], capabilities: ["members.create", "members.update", "tasks.manage"], grantable: true },
+  { department: "Branch Administration", name: "Branch Administrator", modules: ["Branches", "Members", "Department Tasks"], capabilities: ["branches.manage", "members.create", "members.update", "tasks.manage"], grantable: true },
+  { department: "Member", name: "Regular Member", modules: [] },
+  { department: "Visitor", name: "Visitor", modules: [] },
+];
+
+export async function seedRoyalhouseRoleConfig(): Promise<void> {
+  await db.insert(adminDepartmentsTable)
+    .values(seedDepartments.map((name) => ({ name })))
+    .onConflictDoNothing({ target: adminDepartmentsTable.name });
+  const departments = await db.select().from(adminDepartmentsTable);
+  const departmentIds = new Map(departments.map((department) => [department.name, department.id]));
+  await db.insert(adminRolesTable)
+    .values(seedRoles.map((role) => ({
+      departmentId: departmentIds.get(role.department)!,
+      name: role.name,
+      modules: role.modules,
+      capabilities: role.capabilities ?? [],
+      grantable: role.grantable ?? false,
+      system: role.system ?? false,
+    })))
+    .onConflictDoNothing({ target: adminRolesTable.name });
 }

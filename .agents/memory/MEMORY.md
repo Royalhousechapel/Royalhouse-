@@ -3,3 +3,4 @@
 - [Private Expo preview limit](expo-private-preview.md) — native Expo Go previews are unavailable for this private mobile artifact; use the browser preview or a supported native test setup.
 - [Expo browser history](expo-browser-history.md) — use distinct Stack routes for screens that must support browser Back; tab query changes can replace history.
 - [Worldwide branch coverage](worldwide-branch-coverage.md) — include London and the whole published Royalhouse network, not just the original seed locations.
+- [Admin dashboard scope](admin-dashboard-scope.md) — only enable role modules backed by real shared records and server-enforced actions; otherwise use the department task queue.
