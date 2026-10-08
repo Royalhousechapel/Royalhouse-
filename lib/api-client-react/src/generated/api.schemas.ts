@@ -5,6 +5,47 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type VisitorIdentityRegistrationState = typeof VisitorIdentityRegistrationState[keyof typeof VisitorIdentityRegistrationState];
+
+
+export const VisitorIdentityRegistrationState = {
+  visitor: 'visitor',
+  requested: 'requested',
+  member: 'member',
+} as const;
+
+export interface VisitorIdentity {
+  id: string;
+  fullName: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  phone: string | null;
+  /** @nullable */
+  branchId: string | null;
+  /** @nullable */
+  visitorId: string | null;
+  /** @nullable */
+  memberId: string | null;
+  personType: string;
+  membershipStatus: string;
+  registrationState: VisitorIdentityRegistrationState;
+  /** @nullable */
+  membershipRequestedAt: string | null;
+  /** @nullable */
+  membershipApprovedAt: string | null;
+}
+
+export interface VisitorRegistrationRequest {
+  /**
+     * @minLength 2
+     * @maxLength 140
+     */
+  fullName: string;
+  /** @maxLength 60 */
+  phone?: string;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -114,7 +155,64 @@ export interface AdminRole {
   active: boolean;
   system: boolean;
 }
+
+export interface AdminDepartment {
+  id: string;
+  name: string;
+  active: boolean;
+  roles: AdminRole[];
+}
+
+export interface AdminRoleConfig {
+  departments: AdminDepartment[];
+  availableModules: string[];
+  availableCapabilities: string[];
+}
+
+export interface AdminDepartmentCreateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+}
+
+export interface AdminDepartmentUpdateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  active?: boolean;
+}
+
+export interface AdminRoleCreateRequest {
+  departmentId: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  modules: string[];
+  capabilities: string[];
+  grantable?: boolean;
+}
+
+export interface AdminRoleUpdateRequest {
+  departmentId?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name?: string;
+  modules?: string[];
+  capabilities?: string[];
+  grantable?: boolean;
+  active?: boolean;
+}
+
 export type AdminUserRole = string;
+
 export interface AdminUser {
   clerkUserId: string;
   /** @nullable */
@@ -156,6 +254,69 @@ export interface AdminMemberInput {
   /** @maxLength 2000 */
   notes?: string;
 }
+
+export interface AdminMemberUpdateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 140
+     */
+  fullName?: string;
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  phone?: string | null;
+  /**
+     * @maxLength 180
+     * @nullable
+     */
+  email?: string | null;
+  /** @nullable */
+  branchId?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export interface DepartmentTask {
+  id: string;
+  departmentId: string;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  status: string;
+  /** @nullable */
+  dueAt?: string | null;
+  createdByClerkUserId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DepartmentTaskInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  /** @maxLength 2000 */
+  description?: string;
+  dueAt?: string;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  clerkUserId: string;
+  action: string;
+  entityType: string;
+  /** @nullable */
+  entityId?: string | null;
+  /** @nullable */
+  details?: string | null;
+  createdAt: string;
+}
+
 export interface ConnectPerson {
   id: string;
   /** @nullable */
@@ -221,6 +382,7 @@ export interface ConnectNotification {
   readAt?: string | null;
   createdAt: string;
 }
+
 export interface ConnectAssignment {
   id: string;
   personId: string;
@@ -325,127 +487,18 @@ export interface LogConnectInteractionResult {
   followUps: ConnectFollowUp[];
 }
 
+export type GetVisitorProfile200 = {
+  profile: VisitorIdentity | null;
+};
+
+export type ListAdminVisitorsParams = {
+pendingOnly?: boolean;
+};
+
 export type ListAdminMembersParams = {
 search?: string;
 };
+
 export type ListConnectPeopleParams = {
 search?: string;
 };
-
-
-export interface AdminDepartmentCreateRequest {
-  /**
-     * @minLength 1
-     * @maxLength 80
-     */
-  name: string;
-}
-
-export interface DepartmentTask {
-  id: string;
-  departmentId: string;
-  title: string;
-  /** @nullable */
-  description?: string | null;
-  status: string;
-  /** @nullable */
-  dueAt?: string | null;
-  createdByClerkUserId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AdminRoleCreateRequest {
-  departmentId: string;
-  /**
-     * @minLength 1
-     * @maxLength 100
-     */
-  name: string;
-  modules: string[];
-  capabilities: string[];
-  grantable?: boolean;
-}
-
-export interface AdminDepartmentUpdateRequest {
-  /**
-     * @minLength 1
-     * @maxLength 80
-     */
-  name?: string;
-  active?: boolean;
-}
-
-export interface AdminMemberUpdateRequest {
-  /**
-     * @minLength 1
-     * @maxLength 140
-     */
-  fullName?: string;
-  /**
-     * @maxLength 60
-     * @nullable
-     */
-  phone?: string | null;
-  /**
-     * @maxLength 180
-     * @nullable
-     */
-  email?: string | null;
-  /** @nullable */
-  branchId?: string | null;
-  /**
-     * @maxLength 2000
-     * @nullable
-     */
-  notes?: string | null;
-}
-
-export interface AdminDepartment {
-  id: string;
-  name: string;
-  active: boolean;
-  roles: AdminRole[];
-}
-
-export interface AdminRoleUpdateRequest {
-  departmentId?: string;
-  /**
-     * @minLength 1
-     * @maxLength 100
-     */
-  name?: string;
-  modules?: string[];
-  capabilities?: string[];
-  grantable?: boolean;
-  active?: boolean;
-}
-
-export interface DepartmentTaskInput {
-  /**
-     * @minLength 1
-     * @maxLength 160
-     */
-  title: string;
-  /** @maxLength 2000 */
-  description?: string;
-  dueAt?: string;
-}
-
-export interface AdminAuditLog {
-  id: string;
-  clerkUserId: string;
-  action: string;
-  entityType: string;
-  /** @nullable */
-  entityId?: string | null;
-  /** @nullable */
-  details?: string | null;
-  createdAt: string;
-}
-
-export interface AdminRoleConfig {
-  departments: AdminDepartment[];
-  availableModules: string[];
-  availableCapabilities: string[];
-}

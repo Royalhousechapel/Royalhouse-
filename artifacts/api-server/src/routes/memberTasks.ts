@@ -23,6 +23,7 @@ import {
   peopleTable,
 } from "@workspace/db";
 import { requireAdmin, requireCapability, requireModule, type AdminRequest } from "../middlewares/adminAuth";
+import { createChurchPerson, updateChurchPerson, sendChurchIdentityError } from "../lib/churchIdentity";
 
 const router: IRouter = Router();
 router.use(requireAdmin);
@@ -95,7 +96,8 @@ router.post("/admin/members", requireModule("Members"), requireCapability("membe
       return;
     }
   }
-  const [person] = await db.insert(peopleTable).values({
+  try {
+  const person = await createChurchPerson({
     branchId,
     personType: "member",
     fullName: parsed.data.fullName.trim(),
@@ -103,9 +105,10 @@ router.post("/admin/members", requireModule("Members"), requireCapability("membe
     email: parsed.data.email?.trim().toLowerCase() || null,
     membershipStatus: "active",
     notes: parsed.data.notes?.trim() || null,
-  }).returning();
+  });
   await audit(req, "member.created", "person", person.id, { fullName: person.fullName });
   res.status(201).json(CreateAdminMemberResponse.parse(memberResponse(person)));
+  } catch (error) { if (!sendChurchIdentityError(error, res)) throw error; }
 });
 
 router.patch("/admin/members/:id", requireModule("Members"), requireCapability("members.update"), async (req: AdminRequest, res): Promise<void> => {
@@ -136,16 +139,18 @@ router.patch("/admin/members/:id", requireModule("Members"), requireCapability("
       return;
     }
   }
-  const [person] = await db.update(peopleTable).set({
+  try {
+  const person = await updateChurchPerson(existing.id, {
     ...parsed.data,
     fullName: parsed.data.fullName?.trim(),
-    email: parsed.data.email?.trim().toLowerCase(),
-    phone: parsed.data.phone?.trim(),
-    notes: parsed.data.notes?.trim(),
+    email: parsed.data.email === null ? null : parsed.data.email?.trim().toLowerCase(),
+    phone: parsed.data.phone === null ? null : parsed.data.phone?.trim(),
+    notes: parsed.data.notes === null ? null : parsed.data.notes?.trim(),
     updatedAt: new Date(),
-  }).where(eq(peopleTable.id, existing.id)).returning();
+  });
   await audit(req, "member.updated", "person", person.id, parsed.data);
   res.json(UpdateAdminMemberResponse.parse(memberResponse(person)));
+  } catch (error) { if (!sendChurchIdentityError(error, res)) throw error; }
 });
 
 router.get("/admin/department-tasks", requireModule("Department Tasks"), async (req: AdminRequest, res): Promise<void> => {

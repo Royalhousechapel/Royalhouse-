@@ -15,19 +15,23 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { Alert } from '@/utils/alert';
 import { AdminUsersRolesWorkspace } from '@/components/admin/AdminUsersRolesWorkspace';
 import { AdminMembersWorkspace } from '@/components/admin/AdminMembersWorkspace';
 import { AdminDepartmentTasksWorkspace } from '@/components/admin/AdminDepartmentTasksWorkspace';
 import { AdminRoleConfigWorkspace } from '@/components/admin/AdminRoleConfigWorkspace';
+import { OfficialMediaLinks } from '@/components/visitors/OfficialMediaLinks';
+import { WelcomeLink } from '@/components/visitors/WelcomeLink';
 import { MediaPlayerModal } from '@/components/media/MediaPlayerModal';
 import { liveMedia, sermonData } from '@/data/sermons';
 import type { MediaItem } from '@/data/sermons';
 import { useAuth, useUser } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  getGetVisitorProfileQueryKey,
+  useGetVisitorProfile,
   getListBranchesQueryKey,
   getGetBranchDirectoryQueryKey,
   useGetBranchDirectory,
@@ -227,48 +231,85 @@ function SectionHeader({ title, action, onPress }: { title: string; action?: str
   );
 }
 
-function Header({ onProfile }: { onProfile: () => void }) {
+function Header({ onProfile, initial }: { onProfile: () => void; initial: string | null }) {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.topBar, { paddingTop: insets.top + 10, backgroundColor: colors.primary }]}>
-      <View style={styles.brandRow}>
-        <Image source={logo} style={styles.headerLogo} resizeMode="contain" />
-        <View>
-          <Text style={styles.brandName}>ROYALHOUSE</Text>
-          <Text style={styles.brandSubname}>CHAPEL WORLDWIDE</Text>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ backgroundColor: colors.primary }}>
+      <View style={[styles.topBar, { paddingTop: 10 }]}>
+        <View style={styles.brandRow}>
+          <Image source={logo} style={styles.headerLogo} resizeMode="contain" />
+          <View>
+            <Text style={styles.brandName}>ROYALHOUSE</Text>
+            <Text style={styles.brandSubname}>CHAPEL WORLDWIDE</Text>
+          </View>
         </View>
+        <Pressable testID="button-notifications" onPress={() => Alert.alert('Notifications', 'You are all caught up.')} style={styles.headerIcon}>
+          <Ionicons name="notifications-outline" size={21} color="#FFFFFF" />
+          <View style={styles.notificationDot} />
+        </Pressable>
+        <Pressable testID="button-profile" accessibilityLabel={initial ? 'My profile' : 'Account'} onPress={onProfile} style={[styles.avatar, { backgroundColor: colors.accent }]}>
+          {initial ? <Text style={styles.avatarText}>{initial}</Text> : <Ionicons name="person" size={18} color="#FFFFFF" />}
+        </Pressable>
       </View>
-      <Pressable testID="button-notifications" onPress={() => Alert.alert('Notifications', 'You are all caught up.')} style={styles.headerIcon}>
-        <Ionicons name="notifications-outline" size={21} color="#FFFFFF" />
-        <View style={styles.notificationDot} />
-      </Pressable>
-      <Pressable testID="button-profile" onPress={onProfile} style={[styles.avatar, { backgroundColor: colors.accent }]}>
-        <Text style={styles.avatarText}>O</Text>
-      </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 
 function HomeScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
   const colors = useColors();
+  const router = useRouter();
   const { user } = useUser();
+  const { isSignedIn, signOut } = useAuth();
   const [activeMedia, setActiveMedia] = useState<MediaItem | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState('');
+  const userId = user?.id ?? 'anon';
+  const visitorQuery = useGetVisitorProfile({ query: { queryKey: [...getGetVisitorProfileQueryKey(), userId], enabled: !!isSignedIn && !!user?.id, refetchInterval: 30000, refetchOnMount: 'always' } });
+  const realName = (visitorQuery.data?.profile?.fullName ?? user?.fullName ?? user?.firstName ?? '').trim();
+  const displayName = isSignedIn ? realName : '';
+  const initial = displayName ? displayName.slice(0, 1).toUpperCase() : null;
+  const handleSignOut = async () => {
+    setSignOutError('');
+    setSigningOut(true);
+    try {
+      await signOut();
+      router.replace('/');
+    } catch (error) {
+      setSignOutError(error instanceof Error ? error.message : 'Could not sign out. Please try again.');
+    } finally {
+      setSigningOut(false);
+    }
+  };
+  const onHeaderProfile = () => (isSignedIn ? navigate('profile') : router.push('/(auth)/sign-in' as never));
   return (
-    <>
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <Header onProfile={() => navigate('profile')} />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <Header onProfile={onHeaderProfile} initial={initial} />
+      <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent} contentInsetAdjustmentBehavior="never" automaticallyAdjustContentInsets={false} showsVerticalScrollIndicator={false}>
       <View style={styles.greetingRow}>
-        <View>
+        <View style={styles.greetingCopy}>
           <Text style={[styles.eyebrow, { color: colors.accent }]}>WELCOME HOME</Text>
-          <Text style={[styles.greeting, { color: colors.foreground }]}>Hi, {user?.firstName ?? user?.fullName ?? 'Friend'}</Text>
-          <Text style={[styles.greetingSub, { color: colors.mutedForeground }]}>Your kingdom family is here.</Text>
+          <Text style={[styles.greeting, { color: colors.foreground }]}>{displayName ? `Hi, ${displayName}` : 'Welcome'}</Text>
+          <Text style={[styles.greetingSub, { color: colors.mutedForeground }]}>{!isSignedIn ? 'Sign in to see your church identity.' : displayName ? 'Your kingdom family is here.' : 'Complete your registration to add your name.'}</Text>
         </View>
         <View style={[styles.onlinePill, { backgroundColor: '#E7F5EC' }]}>
           <View style={styles.onlineDot} />
           <Text style={styles.onlineText}>Online</Text>
         </View>
       </View>
+      <View style={styles.accountRow}>
+        {!isSignedIn ? (
+          <>
+            <ActionButton label="Sign in" icon="log-in-outline" variant="gold" onPress={() => router.push('/(auth)/sign-in' as never)} />
+            <ActionButton label="Create account" icon="person-add-outline" variant="outline" onPress={() => router.push('/(auth)/sign-up' as never)} />
+          </>
+        ) : (
+          <>
+            {displayName ? <ActionButton label="My profile" icon="person-outline" variant="gold" onPress={() => navigate('profile')} /> : <ActionButton label="Complete registration" icon="id-card-outline" variant="gold" onPress={() => router.push('/welcome' as never)} />}
+            <ActionButton label={signingOut ? 'Signing out…' : 'Sign out'} icon="log-out-outline" variant="outline" onPress={() => { if (!signingOut) void handleSignOut(); }} />
+          </>
+        )}
+      </View>
+      {signOutError ? <Text style={styles.accountError}>{signOutError}</Text> : null}
 
       <ImageBackground source={worshipBackground} imageStyle={styles.heroImage} style={styles.heroCard}>
         <View style={styles.heroOverlay} />
@@ -290,6 +331,7 @@ function HomeScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
         <QuickAction label="Events" icon="calendar-outline" onPress={() => navigate('events')} />
       </View>
 
+      <WelcomeLink />
       <SectionHeader title="Daily inspiration" />
       <View style={[styles.devotionalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[styles.quoteMark, { backgroundColor: colors.accent }]}><Text style={styles.quoteMarkText}>“</Text></View>
@@ -332,7 +374,7 @@ function HomeScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
       <View style={styles.bottomSpacer} />
     </ScrollView>
     <MediaPlayerModal media={activeMedia} onClose={() => setActiveMedia(null)} />
-    </>
+    </View>
   );
 }
 
@@ -400,6 +442,7 @@ export function SermonsScreen({ navigate }: { navigate: (screen: ScreenName) => 
     <>
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <SimplePageHeader eyebrow="THE WORD" title="Listen & grow" subtitle="Messages for wherever you are in your walk." />
+      <OfficialMediaLinks />
       <View style={[styles.searchBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Ionicons name="search" size={19} color={colors.mutedForeground} />
         <TextInput value={query} onChangeText={setQuery} placeholder="Search sermons, speakers, topics" placeholderTextColor={colors.mutedForeground} style={[styles.searchInput, { color: colors.foreground }]} />
@@ -861,6 +904,9 @@ function PublicRolePreview({ role, accountRole, onExit }: { role: string; accoun
 export function ProfileScreen({ navigate, previewMode = false, previewRole }: { navigate: (screen: ScreenName) => void; previewMode?: boolean; previewRole?: string }) {
   const colors = useColors();
   const { user } = useUser();
+  const { isSignedIn, userId } = useAuth();
+  const visitorQuery = useGetVisitorProfile({ query: { queryKey: [...getGetVisitorProfileQueryKey(), userId], enabled: !!isSignedIn && !!userId && !previewMode, refetchInterval: 30000, refetchOnMount: 'always' } });
+  const visitor = previewMode ? null : visitorQuery.data?.profile ?? null;
   if (previewMode) {
     return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent}>
       <View style={[styles.profileHero, { backgroundColor: colors.primary }]}>
@@ -869,6 +915,7 @@ export function ProfileScreen({ navigate, previewMode = false, previewRole }: { 
         <Text style={styles.profileBranch}>{previewRole === 'Visitor' ? 'Visitor experience preview' : 'Member experience preview'}</Text>
         <View style={styles.memberBadge}><Ionicons name="eye-outline" size={14} color={colors.accent} /><Text style={[styles.memberBadgeText, { color: colors.accent }]}>PREVIEW · NO MEMBER RECORD LINKED</Text></View>
       </View>
+      <WelcomeLink />
       <SectionHeader title="Member app" />
       <ProfileMenu label="Find a branch" detail="Browse the live branch directory" icon="location-outline" onPress={() => navigate('branches')} />
       <ProfileMenu label="Sermons" detail="Open the public sermon library" icon="play-circle-outline" onPress={() => navigate('sermons')} />
@@ -877,7 +924,10 @@ export function ProfileScreen({ navigate, previewMode = false, previewRole }: { 
       <View style={styles.bottomSpacer} />
     </ScrollView>;
   }
-  return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent}><View style={[styles.profileHero, { backgroundColor: colors.primary }]}><View style={[styles.profileAvatar, { backgroundColor: colors.accent }]}><Text style={styles.profileAvatarText}>C</Text></View><Text style={styles.profileName}>Clement Bolarinwa</Text><Text style={styles.profileBranch}>Royalhouse Victory Center · Member</Text><View style={styles.memberBadge}><Ionicons name="shield-checkmark" size={14} color={colors.accent} /><Text style={[styles.memberBadgeText, { color: colors.accent }]}>MEMBER SINCE 2024</Text></View></View><SectionHeader title="Your kingdom journey" /><View style={styles.profileGrid}><ProfileStat value="12" label="Saved sermons" icon="bookmark-outline" /><ProfileStat value="04" label="Events joined" icon="calendar-outline" /><ProfileStat value="08" label="Prayer updates" icon="heart-outline" /><ProfileStat value="$450" label="This year giving" icon="gift-outline" /></View><SectionHeader title="Quick access" /><ProfileMenu label="Digital member ID" detail="Your membership card" icon="card-outline" onPress={() => Alert.alert('Digital member ID', 'Your member ID will be available here once your profile is verified.')} /><ProfileMenu label="Giving history" detail="View gifts and receipts" icon="receipt-outline" onPress={() => navigate('give')} /><ProfileMenu label="Saved resources" detail="Sermons and library items" icon="library-outline" onPress={() => navigate('sermons')} /><ProfileMenu label="Find a branch" detail="Explore the global directory" icon="location-outline" onPress={() => navigate('branches')} /><ProfileMenu label="Admin Dashboard" detail="Manage the Royalhouse ecosystem" icon="speedometer-outline" onPress={() => navigate('admin')} /><ProfileMenu label="Notification settings" detail="Stay connected to the house" icon="notifications-outline" onPress={() => Alert.alert('Notifications', 'Notification preferences are ready to configure.')} /><View style={styles.bottomSpacer} /></ScrollView>;
+  const displayName = visitor?.fullName ?? user?.fullName ?? (isSignedIn ? 'Signed-in account' : 'Guest');
+  const state = visitor?.registrationState;
+  const label = state === 'member' ? `Member${visitor?.memberId ? ` · ${visitor.memberId}` : ''}` : state === 'requested' ? `Membership request pending${visitor?.visitorId ? ` · ${visitor.visitorId}` : ''}` : state === 'visitor' ? `Visitor${visitor?.visitorId ? ` · ${visitor.visitorId}` : ''}` : isSignedIn ? (visitorQuery.isLoading ? 'Loading…' : visitorQuery.isError ? 'Registration status unavailable' : 'Not registered yet') : 'Signed out';
+  return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent}><WelcomeLink /><View style={[styles.profileHero, { backgroundColor: colors.primary }]}><View style={[styles.profileAvatar, { backgroundColor: colors.accent }]}><Text style={styles.profileAvatarText}>{displayName.slice(0, 1).toUpperCase()}</Text></View><Text style={styles.profileName}>{displayName}</Text><Text style={styles.profileBranch}>{label}</Text></View><SectionHeader title="Quick access" /><ProfileMenu label="Digital member ID" detail="Your membership card" icon="card-outline" onPress={() => Alert.alert('Digital member ID', visitor?.memberId ? `Your permanent member ID is ${visitor.memberId}.` : 'Your member ID appears here once staff approve your membership.')} /><ProfileMenu label="Giving history" detail="View gifts and receipts" icon="receipt-outline" onPress={() => navigate('give')} /><ProfileMenu label="Saved resources" detail="Sermons and library items" icon="library-outline" onPress={() => navigate('sermons')} /><ProfileMenu label="Find a branch" detail="Explore the global directory" icon="location-outline" onPress={() => navigate('branches')} /><ProfileMenu label="Admin Dashboard" detail="Manage the Royalhouse ecosystem" icon="speedometer-outline" onPress={() => navigate('admin')} /><ProfileMenu label="Notification settings" detail="Stay connected to the house" icon="notifications-outline" onPress={() => Alert.alert('Notifications', 'Notification preferences are ready to configure.')} /><View style={styles.bottomSpacer} /></ScrollView>;
 }
 
 function ConnectTeamWorkspace({ capabilities }: { capabilities: string[] }) {
@@ -1107,6 +1157,9 @@ const styles = StyleSheet.create({
   greetingRow: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 18, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   eyebrow: { fontSize: 10, fontWeight: '800', letterSpacing: 1.8 },
   greeting: { fontSize: 24, lineHeight: 30, fontWeight: '700', marginTop: 5 },
+  greetingCopy: { flex: 1, minWidth: 0, paddingRight: 10 },
+  accountRow: { paddingHorizontal: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
+  accountError: { color: '#B42318', fontSize: 12, paddingHorizontal: 20, marginBottom: 10 },
   greetingSub: { fontSize: 13, marginTop: 3 },
   onlinePill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 9, paddingVertical: 6, borderRadius: 20, gap: 5 },
   onlineDot: { width: 6, height: 6, backgroundColor: '#2B8A4B', borderRadius: 3 },

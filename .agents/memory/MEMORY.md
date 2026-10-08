@@ -2,7 +2,9 @@
 - [Expo SDK upgrade constraints](expo-sdk-upgrades.md) — SDK upgrades may need a narrow pnpm age-policy exception and SDK-specific Router/TypeScript compatibility fixes.
 - [Private Expo preview limit](expo-private-preview.md) — native Expo Go previews are unavailable for this private mobile artifact; use the browser preview or a supported native test setup.
 - [Expo browser history](expo-browser-history.md) — use distinct Stack routes for screens that must support browser Back; tab query changes can replace history.
+- [Expo web safe areas](expo-web-safe-areas.md) — single-page exports use the public HTML template, not app/+html, for notch-aware viewport metadata.
 - [Worldwide branch coverage](worldwide-branch-coverage.md) — include London and the whole published Royalhouse network, not just the original seed locations.
 - [Admin dashboard scope](admin-dashboard-scope.md) — only enable role modules backed by real shared records and server-enforced actions; otherwise use the department task queue.
 - [Git provider verification](git-provider-verification.md) — healthy integration metadata and public repository reads do not prove authenticated push access.
 - [Post-merge port conflicts](post-merge-port-conflicts.md) — reconciliation can leave old artifact servers occupying ports after workflows restart.
+- [Visitor identity policy](visitor-identity-policy.md) — verified visitor accounts become staff-approved members on one shared record; prevent duplicate app and staff registrations.

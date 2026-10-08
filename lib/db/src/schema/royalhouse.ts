@@ -5,8 +5,10 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const branchesTable = pgTable("royalhouse_branches", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -79,6 +81,7 @@ export const departmentTasksTable = pgTable("royalhouse_department_tasks", {
 
 export const peopleTable = pgTable("royalhouse_people", {
   id: uuid("id").defaultRandom().primaryKey(),
+  clerkUserId: text("clerk_user_id").unique(),
   branchId: uuid("branch_id").references(() => branchesTable.id, { onDelete: "set null" }),
   personType: text("person_type").notNull().default("visitor"),
   fullName: text("full_name").notNull(),
@@ -88,6 +91,8 @@ export const peopleTable = pgTable("royalhouse_people", {
   memberId: text("member_id").unique(),
   visitorStatus: text("visitor_status").notNull().default("new"),
   membershipStatus: text("membership_status").notNull().default("not_member"),
+  membershipRequestedAt: timestamp("membership_requested_at", { withTimezone: true }),
+  membershipApprovedAt: timestamp("membership_approved_at", { withTimezone: true }),
   firstVisitAt: timestamp("first_visit_at", { withTimezone: true }),
   lastVisitAt: timestamp("last_visit_at", { withTimezone: true }),
   foundationSchoolStatus: text("foundation_school_status").notNull().default("not_started"),
@@ -97,7 +102,10 @@ export const peopleTable = pgTable("royalhouse_people", {
   tags: text("tags").notNull().default("[]"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (person) => [
+  uniqueIndex("royalhouse_people_email_identity_unique").on(sql`nullif(lower(btrim(${person.email})), '')`),
+  uniqueIndex("royalhouse_people_phone_identity_unique").on(sql`nullif(regexp_replace(regexp_replace(coalesce(${person.phone}, ''), '[^0-9]', '', 'g'), '^00', '', ''), '')`),
+]);
 
 export const connectAssignmentsTable = pgTable("royalhouse_connect_assignments", {
   id: uuid("id").defaultRandom().primaryKey(),

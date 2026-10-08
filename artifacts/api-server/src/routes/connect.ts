@@ -27,6 +27,7 @@ import {
   LogConnectInteractionResponse,
 } from "@workspace/api-zod";
 import { requireAdmin, requireCapability, requireModule, type AdminRequest } from "../middlewares/adminAuth";
+import { createChurchPerson, sendChurchIdentityError, churchId } from "../lib/churchIdentity";
 
 const router: IRouter = Router();
 router.use(requireAdmin, requireModule("Connect Team"));
@@ -200,13 +201,25 @@ router.post("/admin/connect/people", requireCapability("connect.create_people"),
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [person] = await db.insert(peopleTable).values({
+  if (req.admin?.branchId && parsed.data.branchId && parsed.data.branchId !== req.admin.branchId) {
+    res.status(403).json({ error: "You can only register people in your assigned branch." }); return;
+  }
+  const member = parsed.data.personType === "member" || (parsed.data.membershipStatus && parsed.data.membershipStatus !== "not_member");
+  if (member && !req.adminCapabilities?.includes("members.create")) {
+    res.status(403).json({ error: "Member creation permission is required to grant permanent membership." }); return;
+  }
+  if (parsed.data.personType && !["visitor", "member"].includes(parsed.data.personType)) {
+    res.status(400).json({ error: "Choose visitor or member." }); return;
+  }
+  try {
+  const person = await createChurchPerson({
     ...parsed.data,
-    branchId: parsed.data.branchId || req.admin?.branchId || null,
+    personType: member ? "member" : "visitor",
+    branchId: req.admin?.branchId ?? parsed.data.branchId ?? null,
     firstVisitAt: dateOrUndefined(parsed.data.firstVisitAt),
     lastVisitAt: dateOrUndefined(parsed.data.lastVisitAt),
     tags: JSON.stringify(parsed.data.tags ?? []),
-  }).returning();
+  });
   await db.insert(auditLogTable).values({
     clerkUserId: req.userId!,
     action: "person.created",
@@ -215,6 +228,7 @@ router.post("/admin/connect/people", requireCapability("connect.create_people"),
     details: JSON.stringify({ personType: person.personType }),
   });
   res.status(201).json(CreateConnectPersonResponse.parse({ ...person, tags: parseJsonArray(person.tags) }));
+  } catch (error) { if (!sendChurchIdentityError(error, res)) throw error; }
 });
 
 router.get("/admin/connect/people/:id", async (req: AdminRequest, res): Promise<void> => {
@@ -314,8 +328,18 @@ router.post("/admin/connect/people/:id/interactions", requireCapability("connect
   const personUpdates: Record<string, unknown> = { updatedAt: new Date() };
   if (triggers.some((trigger) => trigger.pastoralFollowUp === true)) personUpdates.pastoralFollowUp = true;
   if (triggers.some((trigger) => trigger.membershipStatus === "member")) {
-    personUpdates.membershipStatus = "member";
+    if (!req.adminCapabilities?.includes("members.create")) {
+      res.status(403).json({ error: "Member approval permission is required for this outcome." }); return;
+    }
+    const [existing] = await db.select().from(peopleTable).where(eq(peopleTable.id, personId)).limit(1);
+    if (!existing || (req.admin?.branchId && existing.branchId !== req.admin.branchId)) {
+      res.status(403).json({ error: "This person is outside your assigned branch." }); return;
+    }
+    personUpdates.membershipStatus = "active";
     personUpdates.personType = "member";
+    personUpdates.memberId = existing.memberId || churchId("M", personId);
+    personUpdates.visitorId = existing.visitorId || churchId("V", personId);
+    personUpdates.membershipApprovedAt = existing.membershipApprovedAt || new Date();
   }
   if (parsed.data.foundationSchoolInterest || triggers.some((trigger) => trigger.followUpType === "foundation_school")) {
     personUpdates.foundationSchoolStatus = "interested";

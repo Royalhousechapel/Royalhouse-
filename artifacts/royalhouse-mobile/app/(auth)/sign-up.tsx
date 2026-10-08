@@ -38,7 +38,7 @@ export default function SignUpScreen() {
       return;
     }
     if (signUp.status === 'complete') {
-      await signUp.finalize({ navigate: () => router.replace('/(tabs)') });
+      await signUp.finalize({ navigate: () => router.replace('/welcome' as never) });
     }
   };
 

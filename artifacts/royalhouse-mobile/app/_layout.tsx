@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -20,12 +20,13 @@ import { setAuthTokenGetter, setBaseUrl, setPreviewRoleGetter } from '@workspace
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
 const apiDomain = process.env.EXPO_PUBLIC_DOMAIN;
 if (apiDomain) setBaseUrl(`https://${apiDomain}`);
 
 function AuthTokenBridge({ children }: { children: React.ReactNode }) {
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const queryClient = useMemo(() => new QueryClient(), [userId]);
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
     return () => {
@@ -33,7 +34,7 @@ function AuthTokenBridge({ children }: { children: React.ReactNode }) {
       setPreviewRoleGetter(null);
     };
   }, [getToken]);
-  return <>{children}</>;
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
 function RootLayoutNav() {
@@ -42,6 +43,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="events" options={{ headerShown: false }} />
+      <Stack.Screen name="welcome" options={{ title: 'Welcome' }} />
     </Stack>
   );
 }
@@ -71,13 +73,11 @@ export default function RootLayout() {
         >
           <ClerkLoaded>
             <AuthTokenBridge>
-              <QueryClientProvider client={queryClient}>
                 <GestureHandlerRootView>
                   <KeyboardProvider>
                     <RootLayoutNav />
                   </KeyboardProvider>
                 </GestureHandlerRootView>
-              </QueryClientProvider>
             </AuthTokenBridge>
           </ClerkLoaded>
         </ClerkProvider>

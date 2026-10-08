@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
+import { PendingMembershipRequests } from '@/components/visitors/PendingMembershipRequests';
 import { Alert } from '@/utils/alert';
 import { useColors } from '@/hooks/useColors';
 import {
@@ -73,6 +74,7 @@ export function AdminMembersWorkspace({ canCreate, canUpdate }: { canCreate: boo
 
   return (
     <View style={styles.container}>
+      <PendingMembershipRequests canApprove={canCreate} />
       <View style={[styles.intro, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Ionicons name="people-outline" size={21} color={colors.accent} />
         <View style={styles.flex}>
@@ -117,9 +119,10 @@ export function AdminMembersWorkspace({ canCreate, canUpdate }: { canCreate: boo
               <Text style={[styles.label, { color: colors.foreground }]}>Full name</Text>
               <TextInput value={draft.fullName} onChangeText={(value) => setDraft((current) => ({ ...current, fullName: value }))} placeholder="Member name" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} />
               <Text style={[styles.label, { color: colors.foreground }]}>Phone</Text>
-              <TextInput value={draft.phone} onChangeText={(value) => setDraft((current) => ({ ...current, phone: value }))} keyboardType="phone-pad" placeholder="Optional" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} />
+              <TextInput value={draft.phone} onChangeText={(value) => setDraft((current) => ({ ...current, phone: value }))} keyboardType="phone-pad" placeholder="International format, +233..." placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} />
               <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
               <TextInput value={draft.email} onChangeText={(value) => setDraft((current) => ({ ...current, email: value }))} keyboardType="email-address" autoCapitalize="none" placeholder="Optional" placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} />
+              <Text style={[styles.muted, { color: colors.mutedForeground }]}>Email or international phone is required. Duplicate emails or phone numbers are rejected.</Text>
               <Text style={[styles.label, { color: colors.foreground }]}>Branch</Text>
               <View style={styles.branchOptions}>
                 <Pressable onPress={() => setDraft((current) => ({ ...current, branchId: '' }))} style={[styles.branchChip, { backgroundColor: draft.branchId === '' ? colors.accent : colors.background, borderColor: draft.branchId === '' ? colors.accent : colors.border }]}><Text style={[styles.chipText, { color: draft.branchId === '' ? '#FFFFFF' : colors.foreground }]}>Unassigned</Text></Pressable>

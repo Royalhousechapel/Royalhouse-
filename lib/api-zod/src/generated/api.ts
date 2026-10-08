@@ -7,6 +7,28 @@
  */
 import * as zod from 'zod';
 
+export const getBranchDirectoryResponseOfficialEntryCountMin = 0;
+export const getBranchDirectoryResponseOfficialEntryCountMultipleOf = 1;
+export const createAdminDepartmentBodyNameMax = 80;
+export const updateAdminDepartmentBodyNameMax = 80;
+export const createAdminRoleBodyNameMax = 100;
+export const updateAdminRoleBodyNameMax = 100;
+export const grantAdminAccessBodyEmailMin = 3;
+export const registerVisitorBodyFullNameMin = 2;
+export const registerVisitorBodyFullNameMax = 140;
+export const registerVisitorBodyPhoneMax = 60;
+export const createAdminMemberBodyFullNameMax = 140;
+export const createAdminMemberBodyPhoneMax = 60;
+export const createAdminMemberBodyEmailMax = 180;
+export const createAdminMemberBodyNotesMax = 2000;
+export const updateAdminMemberBodyFullNameMax = 140;
+export const updateAdminMemberBodyPhoneMax = 60;
+export const updateAdminMemberBodyEmailMax = 180;
+export const updateAdminMemberBodyNotesMax = 2000;
+export const createDepartmentTaskBodyTitleMax = 160;
+export const createDepartmentTaskBodyDescriptionMax = 2000;
+
+
 
 /**
  * Returns server health status
@@ -41,8 +63,7 @@ export const ListBranchesResponse = zod.array(ListBranchesResponseItem)
 /**
  * @summary List published Royalhouse assemblies and additional managed locations
  */
-export const getBranchDirectoryResponseOfficialEntryCountMin = 0;
-export const getBranchDirectoryResponseOfficialEntryCountMultipleOf = 1;
+
 
 
 export const GetBranchDirectoryResponse = zod.object({
@@ -80,6 +101,7 @@ export const GetAdminProfileResponse = zod.object({
   "capabilities": zod.array(zod.string())
 })
 
+
 /**
  * @summary List configured departments, roles, and supported permissions
  */
@@ -102,6 +124,124 @@ export const GetAdminRoleConfigResponse = zod.object({
   "availableModules": zod.array(zod.string()),
   "availableCapabilities": zod.array(zod.string())
 })
+
+
+/**
+ * @summary Create a department for role configuration
+ */
+
+
+
+export const CreateAdminDepartmentBody = zod.object({
+  "name": zod.string().min(1).max(createAdminDepartmentBodyNameMax)
+})
+
+export const CreateAdminDepartmentResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "active": zod.boolean(),
+  "roles": zod.array(zod.object({
+  "id": zod.string(),
+  "departmentId": zod.string(),
+  "name": zod.string(),
+  "modules": zod.array(zod.string()),
+  "capabilities": zod.array(zod.string()),
+  "grantable": zod.boolean(),
+  "active": zod.boolean(),
+  "system": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Rename or deactivate a department
+ */
+export const UpdateAdminDepartmentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+export const UpdateAdminDepartmentBody = zod.object({
+  "name": zod.string().min(1).max(updateAdminDepartmentBodyNameMax).optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateAdminDepartmentResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "active": zod.boolean(),
+  "roles": zod.array(zod.object({
+  "id": zod.string(),
+  "departmentId": zod.string(),
+  "name": zod.string(),
+  "modules": zod.array(zod.string()),
+  "capabilities": zod.array(zod.string()),
+  "grantable": zod.boolean(),
+  "active": zod.boolean(),
+  "system": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Create a department role with configured module permissions
+ */
+
+
+
+export const CreateAdminRoleBody = zod.object({
+  "departmentId": zod.string(),
+  "name": zod.string().min(1).max(createAdminRoleBodyNameMax),
+  "modules": zod.array(zod.string()),
+  "capabilities": zod.array(zod.string()),
+  "grantable": zod.boolean().optional()
+})
+
+export const CreateAdminRoleResponse = zod.object({
+  "id": zod.string(),
+  "departmentId": zod.string(),
+  "name": zod.string(),
+  "modules": zod.array(zod.string()),
+  "capabilities": zod.array(zod.string()),
+  "grantable": zod.boolean(),
+  "active": zod.boolean(),
+  "system": zod.boolean()
+})
+
+
+/**
+ * @summary Edit or deactivate a department role
+ */
+export const UpdateAdminRoleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+export const UpdateAdminRoleBody = zod.object({
+  "departmentId": zod.string().optional(),
+  "name": zod.string().min(1).max(updateAdminRoleBodyNameMax).optional(),
+  "modules": zod.array(zod.string()).optional(),
+  "capabilities": zod.array(zod.string()).optional(),
+  "grantable": zod.boolean().optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateAdminRoleResponse = zod.object({
+  "id": zod.string(),
+  "departmentId": zod.string(),
+  "name": zod.string(),
+  "modules": zod.array(zod.string()),
+  "capabilities": zod.array(zod.string()),
+  "grantable": zod.boolean(),
+  "active": zod.boolean(),
+  "system": zod.boolean()
+})
+
+
 /**
  * @summary List administrator assignments
  */
@@ -118,7 +258,6 @@ export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem)
 /**
  * @summary Grant or update access for a verified Clerk account
  */
-export const grantAdminAccessBodyEmailMin = 3;
 
 
 export const grantAdminAccessBodyEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
@@ -164,6 +303,12 @@ export const UpdateAdminUserResponse = zod.object({
  */
 
 
+
+
+
+
+
+
 export const CreateBranchBody = zod.object({
   "name": zod.string().min(1),
   "country": zod.string().min(1),
@@ -199,6 +344,13 @@ export const CreateBranchResponse = zod.object({
 export const UpdateBranchParams = zod.object({
   "id": zod.coerce.string()
 })
+
+
+
+
+
+
+
 
 
 export const UpdateBranchBody = zod.object({
@@ -254,12 +406,350 @@ export const ArchiveBranchResponse = zod.object({
   "updatedAt": zod.coerce.date().optional()
 })
 
+
+/**
+ * @summary Get the signed-in person's own church identity
+ */
+export const GetVisitorProfileResponse = zod.object({
+  "profile": zod.union([zod.object({
+  "id": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "branchId": zod.string().nullable(),
+  "visitorId": zod.string().nullable(),
+  "memberId": zod.string().nullable(),
+  "personType": zod.string(),
+  "membershipStatus": zod.string(),
+  "registrationState": zod.enum(['visitor', 'requested', 'member']),
+  "membershipRequestedAt": zod.coerce.date().nullable(),
+  "membershipApprovedAt": zod.coerce.date().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Register or securely claim the same existing church record using a verified email
+ */
+
+
+
+
+export const RegisterVisitorBody = zod.object({
+  "fullName": zod.string().min(registerVisitorBodyFullNameMin).max(registerVisitorBodyFullNameMax),
+  "phone": zod.string().max(registerVisitorBodyPhoneMax).optional()
+})
+
+export const RegisterVisitorResponse = zod.object({
+  "id": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "branchId": zod.string().nullable(),
+  "visitorId": zod.string().nullable(),
+  "memberId": zod.string().nullable(),
+  "personType": zod.string(),
+  "membershipStatus": zod.string(),
+  "registrationState": zod.enum(['visitor', 'requested', 'member']),
+  "membershipRequestedAt": zod.coerce.date().nullable(),
+  "membershipApprovedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Request church staff approval for permanent membership
+ */
+export const RequestVisitorMembershipResponse = zod.object({
+  "id": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "branchId": zod.string().nullable(),
+  "visitorId": zod.string().nullable(),
+  "memberId": zod.string().nullable(),
+  "personType": zod.string(),
+  "membershipStatus": zod.string(),
+  "registrationState": zod.enum(['visitor', 'requested', 'member']),
+  "membershipRequestedAt": zod.coerce.date().nullable(),
+  "membershipApprovedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary List visitor registrations within the authorized branch scope
+ */
+export const ListAdminVisitorsQueryParams = zod.object({
+  "pendingOnly": zod.coerce.boolean().optional()
+})
+
+export const ListAdminVisitorsResponseItem = zod.object({
+  "id": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "branchId": zod.string().nullable(),
+  "visitorId": zod.string().nullable(),
+  "memberId": zod.string().nullable(),
+  "personType": zod.string(),
+  "membershipStatus": zod.string(),
+  "registrationState": zod.enum(['visitor', 'requested', 'member']),
+  "membershipRequestedAt": zod.coerce.date().nullable(),
+  "membershipApprovedAt": zod.coerce.date().nullable()
+})
+export const ListAdminVisitorsResponse = zod.array(ListAdminVisitorsResponseItem)
+
+
+/**
+ * @summary Approve membership and issue a permanent ID on the existing person record
+ */
+export const ApproveVisitorMembershipParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ApproveVisitorMembershipResponse = zod.object({
+  "id": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "branchId": zod.string().nullable(),
+  "visitorId": zod.string().nullable(),
+  "memberId": zod.string().nullable(),
+  "personType": zod.string(),
+  "membershipStatus": zod.string(),
+  "registrationState": zod.enum(['visitor', 'requested', 'member']),
+  "membershipRequestedAt": zod.coerce.date().nullable(),
+  "membershipApprovedAt": zod.coerce.date().nullable()
+})
+
+
 /**
  * @summary Search real member profiles in the role's authorized scope
  */
 export const ListAdminMembersQueryParams = zod.object({
   "search": zod.coerce.string().optional()
 })
+
+export const ListAdminMembersResponseItem = zod.object({
+  "id": zod.string(),
+  "branchId": zod.string().nullish(),
+  "personType": zod.string(),
+  "fullName": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "visitorId": zod.string().nullish(),
+  "memberId": zod.string().nullish(),
+  "visitorStatus": zod.string(),
+  "membershipStatus": zod.string(),
+  "firstVisitAt": zod.coerce.date().nullish(),
+  "lastVisitAt": zod.coerce.date().nullish(),
+  "foundationSchoolStatus": zod.string(),
+  "notes": zod.string().nullish(),
+  "prayerNeeds": zod.string().nullish(),
+  "pastoralFollowUp": zod.boolean(),
+  "tags": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListAdminMembersResponse = zod.array(ListAdminMembersResponseItem)
+
+
+/**
+ * @summary Add a member profile to the shared people records
+ */
+
+
+
+
+
+
+export const CreateAdminMemberBody = zod.object({
+  "fullName": zod.string().min(1).max(createAdminMemberBodyFullNameMax),
+  "phone": zod.string().max(createAdminMemberBodyPhoneMax).optional(),
+  "email": zod.string().max(createAdminMemberBodyEmailMax).optional(),
+  "branchId": zod.string().nullish(),
+  "notes": zod.string().max(createAdminMemberBodyNotesMax).optional()
+})
+
+export const CreateAdminMemberResponse = zod.object({
+  "id": zod.string(),
+  "branchId": zod.string().nullish(),
+  "personType": zod.string(),
+  "fullName": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "visitorId": zod.string().nullish(),
+  "memberId": zod.string().nullish(),
+  "visitorStatus": zod.string(),
+  "membershipStatus": zod.string(),
+  "firstVisitAt": zod.coerce.date().nullish(),
+  "lastVisitAt": zod.coerce.date().nullish(),
+  "foundationSchoolStatus": zod.string(),
+  "notes": zod.string().nullish(),
+  "prayerNeeds": zod.string().nullish(),
+  "pastoralFollowUp": zod.boolean(),
+  "tags": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a member profile in the shared people records
+ */
+export const UpdateAdminMemberParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+
+
+
+export const UpdateAdminMemberBody = zod.object({
+  "fullName": zod.string().min(1).max(updateAdminMemberBodyFullNameMax).optional(),
+  "phone": zod.string().max(updateAdminMemberBodyPhoneMax).nullish(),
+  "email": zod.string().max(updateAdminMemberBodyEmailMax).nullish(),
+  "branchId": zod.string().nullish(),
+  "notes": zod.string().max(updateAdminMemberBodyNotesMax).nullish()
+})
+
+export const UpdateAdminMemberResponse = zod.object({
+  "id": zod.string(),
+  "branchId": zod.string().nullish(),
+  "personType": zod.string(),
+  "fullName": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "visitorId": zod.string().nullish(),
+  "memberId": zod.string().nullish(),
+  "visitorStatus": zod.string(),
+  "membershipStatus": zod.string(),
+  "firstVisitAt": zod.coerce.date().nullish(),
+  "lastVisitAt": zod.coerce.date().nullish(),
+  "foundationSchoolStatus": zod.string(),
+  "notes": zod.string().nullish(),
+  "prayerNeeds": zod.string().nullish(),
+  "pastoralFollowUp": zod.boolean(),
+  "tags": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List real tasks for the effective role's department scope
+ */
+export const ListDepartmentTasksResponseItem = zod.object({
+  "id": zod.string(),
+  "departmentId": zod.string(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string(),
+  "dueAt": zod.coerce.date().nullish(),
+  "createdByClerkUserId": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListDepartmentTasksResponse = zod.array(ListDepartmentTasksResponseItem)
+
+
+/**
+ * @summary Create a shared department task
+ */
+
+
+
+
+export const CreateDepartmentTaskBody = zod.object({
+  "title": zod.string().min(1).max(createDepartmentTaskBodyTitleMax),
+  "description": zod.string().max(createDepartmentTaskBodyDescriptionMax).optional(),
+  "dueAt": zod.coerce.date().optional()
+})
+
+export const CreateDepartmentTaskResponse = zod.object({
+  "id": zod.string(),
+  "departmentId": zod.string(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string(),
+  "dueAt": zod.coerce.date().nullish(),
+  "createdByClerkUserId": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Mark a department task complete
+ */
+export const CompleteDepartmentTaskParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const CompleteDepartmentTaskResponse = zod.object({
+  "id": zod.string(),
+  "departmentId": zod.string(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string(),
+  "dueAt": zod.coerce.date().nullish(),
+  "createdByClerkUserId": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Read recent administrative activity
+ */
+export const ListAdminAuditLogsResponseItem = zod.object({
+  "id": zod.string(),
+  "clerkUserId": zod.string(),
+  "action": zod.string(),
+  "entityType": zod.string(),
+  "entityId": zod.string().nullish(),
+  "details": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListAdminAuditLogsResponse = zod.array(ListAdminAuditLogsResponseItem)
+
+
+/**
+ * @summary List recent notifications for the signed-in Connect Team account
+ */
+export const ListConnectNotificationsResponseItem = zod.object({
+  "id": zod.string(),
+  "notificationType": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "entityType": zod.string().nullish(),
+  "entityId": zod.string().nullish(),
+  "readAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListConnectNotificationsResponse = zod.array(ListConnectNotificationsResponseItem)
+
+
+/**
+ * @summary Mark one of the signed-in account's notifications as read
+ */
+export const MarkConnectNotificationReadParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const MarkConnectNotificationReadResponse = zod.object({
+  "id": zod.string(),
+  "notificationType": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "entityType": zod.string().nullish(),
+  "entityId": zod.string().nullish(),
+  "readAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
 /**
  * @summary List active Connect Team workflow options
  */
@@ -310,6 +800,7 @@ export const ListConnectPeopleResponse = zod.array(ListConnectPeopleResponseItem
 /**
  * @summary Create a visitor or member person record
  */
+
 
 
 export const CreateConnectPersonBody = zod.object({
@@ -447,6 +938,8 @@ export const AssignConnectPersonParams = zod.object({
 })
 
 
+
+
 export const AssignConnectPersonBody = zod.object({
   "assignedClerkUserId": zod.string().min(1),
   "dueAt": zod.coerce.date().optional()
@@ -471,6 +964,8 @@ export const AssignConnectPersonResponse = zod.object({
 export const LogConnectInteractionParams = zod.object({
   "id": zod.coerce.string()
 })
+
+
 
 
 export const LogConnectInteractionBody = zod.object({
@@ -537,332 +1032,3 @@ export const CompleteConnectFollowUpResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
-
-
-export const createAdminMemberBodyPhoneMax = 60;
-
-export const createDepartmentTaskBodyDescriptionMax = 2000;
-
-export const updateAdminRoleBodyNameMax = 100;
-
-/**
- * @summary Update a member profile in the shared people records
- */
-export const UpdateAdminMemberParams = zod.object({
-  "id": zod.coerce.string()
-})
-
-export const UpdateAdminMemberBody = zod.object({
-  "fullName": zod.string().min(1).max(updateAdminMemberBodyFullNameMax).optional(),
-  "phone": zod.string().max(updateAdminMemberBodyPhoneMax).nullish(),
-  "email": zod.string().max(updateAdminMemberBodyEmailMax).nullish(),
-  "branchId": zod.string().nullish(),
-  "notes": zod.string().max(updateAdminMemberBodyNotesMax).nullish()
-})
-
-/**
- * @summary Mark one of the signed-in account's notifications as read
- */
-export const MarkConnectNotificationReadParams = zod.object({
-  "id": zod.coerce.string()
-})
-
-export const CreateAdminRoleResponse = zod.object({
-  "id": zod.string(),
-  "departmentId": zod.string(),
-  "name": zod.string(),
-  "modules": zod.array(zod.string()),
-  "capabilities": zod.array(zod.string()),
-  "grantable": zod.boolean(),
-  "active": zod.boolean(),
-  "system": zod.boolean()
-})
-
-export const ListAdminAuditLogsResponse = zod.array(ListAdminAuditLogsResponseItem)
-
-export const ListAdminMembersResponseItem = zod.object({
-  "id": zod.string(),
-  "branchId": zod.string().nullish(),
-  "personType": zod.string(),
-  "fullName": zod.string(),
-  "phone": zod.string().nullish(),
-  "email": zod.string().nullish(),
-  "visitorId": zod.string().nullish(),
-  "memberId": zod.string().nullish(),
-  "visitorStatus": zod.string(),
-  "membershipStatus": zod.string(),
-  "firstVisitAt": zod.coerce.date().nullish(),
-  "lastVisitAt": zod.coerce.date().nullish(),
-  "foundationSchoolStatus": zod.string(),
-  "notes": zod.string().nullish(),
-  "prayerNeeds": zod.string().nullish(),
-  "pastoralFollowUp": zod.boolean(),
-  "tags": zod.array(zod.string()),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-})
-
-/**
- * @summary Read recent administrative activity
- */
-export const ListAdminAuditLogsResponseItem = zod.object({
-  "id": zod.string(),
-  "clerkUserId": zod.string(),
-  "action": zod.string(),
-  "entityType": zod.string(),
-  "entityId": zod.string().nullish(),
-  "details": zod.string().nullish(),
-  "createdAt": zod.coerce.date()
-})
-
-export const CreateAdminRoleBody = zod.object({
-  "departmentId": zod.string(),
-  "name": zod.string().min(1).max(createAdminRoleBodyNameMax),
-  "modules": zod.array(zod.string()),
-  "capabilities": zod.array(zod.string()),
-  "grantable": zod.boolean().optional()
-})
-
-export const UpdateAdminDepartmentResponse = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "active": zod.boolean(),
-  "roles": zod.array(zod.object({
-  "id": zod.string(),
-  "departmentId": zod.string(),
-  "name": zod.string(),
-  "modules": zod.array(zod.string()),
-  "capabilities": zod.array(zod.string()),
-  "grantable": zod.boolean(),
-  "active": zod.boolean(),
-  "system": zod.boolean()
-}))
-})
-
-export const updateAdminMemberBodyFullNameMax = 140;
-
-/**
- * @summary Rename or deactivate a department
- */
-export const UpdateAdminDepartmentParams = zod.object({
-  "id": zod.coerce.string()
-})
-
-export const UpdateAdminMemberResponse = zod.object({
-  "id": zod.string(),
-  "branchId": zod.string().nullish(),
-  "personType": zod.string(),
-  "fullName": zod.string(),
-  "phone": zod.string().nullish(),
-  "email": zod.string().nullish(),
-  "visitorId": zod.string().nullish(),
-  "memberId": zod.string().nullish(),
-  "visitorStatus": zod.string(),
-  "membershipStatus": zod.string(),
-  "firstVisitAt": zod.coerce.date().nullish(),
-  "lastVisitAt": zod.coerce.date().nullish(),
-  "foundationSchoolStatus": zod.string(),
-  "notes": zod.string().nullish(),
-  "prayerNeeds": zod.string().nullish(),
-  "pastoralFollowUp": zod.boolean(),
-  "tags": zod.array(zod.string()),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-})
-
-/**
- * @summary List real tasks for the effective role's department scope
- */
-export const ListDepartmentTasksResponseItem = zod.object({
-  "id": zod.string(),
-  "departmentId": zod.string(),
-  "title": zod.string(),
-  "description": zod.string().nullish(),
-  "status": zod.string(),
-  "dueAt": zod.coerce.date().nullish(),
-  "createdByClerkUserId": zod.string(),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-})
-
-export const ListDepartmentTasksResponse = zod.array(ListDepartmentTasksResponseItem)
-
-export const CompleteDepartmentTaskResponse = zod.object({
-  "id": zod.string(),
-  "departmentId": zod.string(),
-  "title": zod.string(),
-  "description": zod.string().nullish(),
-  "status": zod.string(),
-  "dueAt": zod.coerce.date().nullish(),
-  "createdByClerkUserId": zod.string(),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-})
-
-export const UpdateAdminRoleResponse = zod.object({
-  "id": zod.string(),
-  "departmentId": zod.string(),
-  "name": zod.string(),
-  "modules": zod.array(zod.string()),
-  "capabilities": zod.array(zod.string()),
-  "grantable": zod.boolean(),
-  "active": zod.boolean(),
-  "system": zod.boolean()
-})
-
-export const CreateDepartmentTaskResponse = zod.object({
-  "id": zod.string(),
-  "departmentId": zod.string(),
-  "title": zod.string(),
-  "description": zod.string().nullish(),
-  "status": zod.string(),
-  "dueAt": zod.coerce.date().nullish(),
-  "createdByClerkUserId": zod.string(),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-})
-
-export const updateAdminDepartmentBodyNameMax = 80;
-
-/**
- * @summary Add a member profile to the shared people records
- */
-export const createAdminMemberBodyFullNameMax = 140;
-
-export const UpdateAdminDepartmentBody = zod.object({
-  "name": zod.string().min(1).max(updateAdminDepartmentBodyNameMax).optional(),
-  "active": zod.boolean().optional()
-})
-
-/**
- * @summary Create a department role with configured module permissions
- */
-export const createAdminRoleBodyNameMax = 100;
-
-export const MarkConnectNotificationReadResponse = zod.object({
-  "id": zod.string(),
-  "notificationType": zod.string(),
-  "title": zod.string(),
-  "body": zod.string(),
-  "entityType": zod.string().nullish(),
-  "entityId": zod.string().nullish(),
-  "readAt": zod.coerce.date().nullish(),
-  "createdAt": zod.coerce.date()
-})
-
-export const ListConnectNotificationsResponse = zod.array(ListConnectNotificationsResponseItem)
-
-export const CreateAdminMemberBody = zod.object({
-  "fullName": zod.string().min(1).max(createAdminMemberBodyFullNameMax),
-  "phone": zod.string().max(createAdminMemberBodyPhoneMax).optional(),
-  "email": zod.string().max(createAdminMemberBodyEmailMax).optional(),
-  "branchId": zod.string().nullish(),
-  "notes": zod.string().max(createAdminMemberBodyNotesMax).optional()
-})
-
-export const createAdminMemberBodyEmailMax = 180;
-
-export const CreateAdminMemberResponse = zod.object({
-  "id": zod.string(),
-  "branchId": zod.string().nullish(),
-  "personType": zod.string(),
-  "fullName": zod.string(),
-  "phone": zod.string().nullish(),
-  "email": zod.string().nullish(),
-  "visitorId": zod.string().nullish(),
-  "memberId": zod.string().nullish(),
-  "visitorStatus": zod.string(),
-  "membershipStatus": zod.string(),
-  "firstVisitAt": zod.coerce.date().nullish(),
-  "lastVisitAt": zod.coerce.date().nullish(),
-  "foundationSchoolStatus": zod.string(),
-  "notes": zod.string().nullish(),
-  "prayerNeeds": zod.string().nullish(),
-  "pastoralFollowUp": zod.boolean(),
-  "tags": zod.array(zod.string()),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-})
-
-export const createAdminMemberBodyNotesMax = 2000;
-
-export const CreateAdminDepartmentResponse = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "active": zod.boolean(),
-  "roles": zod.array(zod.object({
-  "id": zod.string(),
-  "departmentId": zod.string(),
-  "name": zod.string(),
-  "modules": zod.array(zod.string()),
-  "capabilities": zod.array(zod.string()),
-  "grantable": zod.boolean(),
-  "active": zod.boolean(),
-  "system": zod.boolean()
-}))
-})
-
-/**
- * @summary Edit or deactivate a department role
- */
-export const UpdateAdminRoleParams = zod.object({
-  "id": zod.coerce.string()
-})
-
-export const updateAdminMemberBodyPhoneMax = 60;
-
-export const updateAdminMemberBodyEmailMax = 180;
-
-/**
- * @summary Create a shared department task
- */
-export const createDepartmentTaskBodyTitleMax = 160;
-
-/**
- * @summary Create a department for role configuration
- */
-export const createAdminDepartmentBodyNameMax = 80;
-
-export const ListAdminMembersResponse = zod.array(ListAdminMembersResponseItem)
-
-/**
- * @summary Mark a department task complete
- */
-export const CompleteDepartmentTaskParams = zod.object({
-  "id": zod.coerce.string()
-})
-
-/**
- * @summary List recent notifications for the signed-in Connect Team account
- */
-export const ListConnectNotificationsResponseItem = zod.object({
-  "id": zod.string(),
-  "notificationType": zod.string(),
-  "title": zod.string(),
-  "body": zod.string(),
-  "entityType": zod.string().nullish(),
-  "entityId": zod.string().nullish(),
-  "readAt": zod.coerce.date().nullish(),
-  "createdAt": zod.coerce.date()
-})
-
-export const CreateAdminDepartmentBody = zod.object({
-  "name": zod.string().min(1).max(createAdminDepartmentBodyNameMax)
-})
-
-export const UpdateAdminRoleBody = zod.object({
-  "departmentId": zod.string().optional(),
-  "name": zod.string().min(1).max(updateAdminRoleBodyNameMax).optional(),
-  "modules": zod.array(zod.string()).optional(),
-  "capabilities": zod.array(zod.string()).optional(),
-  "grantable": zod.boolean().optional(),
-  "active": zod.boolean().optional()
-})
-
-export const CreateDepartmentTaskBody = zod.object({
-  "title": zod.string().min(1).max(createDepartmentTaskBodyTitleMax),
-  "description": zod.string().max(createDepartmentTaskBodyDescriptionMax).optional(),
-  "dueAt": zod.coerce.date().optional()
-})
-
-export const updateAdminMemberBodyNotesMax = 2000;

@@ -369,6 +369,122 @@ paths:
           description: Insufficient permissions
         "404":
           description: Branch not found
+  /visitor/profile:
+    get:
+      operationId: getVisitorProfile
+      tags: [visitors]
+      summary: Get the signed-in person's own church identity
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Profile or null when registration is not yet complete
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [profile]
+                properties:
+                  profile:
+                    anyOf:
+                      - $ref: "#/components/schemas/VisitorIdentity"
+                      - type: "null"
+        "401":
+          description: Sign in required
+        "403":
+          description: A verified primary email is required
+    post:
+      operationId: registerVisitor
+      tags: [visitors]
+      summary: Register or securely claim the same existing church record using a verified email
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisitorRegistrationRequest"
+      responses:
+        "200":
+          description: Registered church identity; repeated submissions return the same record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitorIdentity"
+        "400":
+          description: Invalid registration
+        "401":
+          description: Sign in required
+        "403":
+          description: Verify your primary email first
+        "409":
+          description: Contact belongs to another record and needs church staff review
+  /visitor/membership-request:
+    post:
+      operationId: requestVisitorMembership
+      tags: [visitors]
+      summary: Request church staff approval for permanent membership
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated identity with pending request, or unchanged approved membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitorIdentity"
+        "401":
+          description: Sign in required
+        "404":
+          description: Complete visitor registration first
+  /admin/visitors:
+    get:
+      operationId: listAdminVisitors
+      tags: [admin]
+      summary: List visitor registrations within the authorized branch scope
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pendingOnly
+          in: query
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Visitor identities, without pastoral notes or account identifiers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VisitorIdentity"
+        "403":
+          description: Members module access required
+  /admin/visitors/{id}/approve-membership:
+    post:
+      operationId: approveVisitorMembership
+      tags: [admin]
+      summary: Approve membership and issue a permanent ID on the existing person record
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Approved member identity with the original visitor ID preserved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitorIdentity"
+        "403":
+          description: Member creation capability and authorized branch required
+        "404":
+          description: Visitor not found
+        "409":
+          description: Visitor has not requested membership
   /admin/members:
     get:
       operationId: listAdminMembers
@@ -755,6 +871,28 @@ components:
       type: http
       scheme: bearer
   schemas:
+    VisitorIdentity:
+      type: object
+      required: [id, fullName, email, phone, branchId, visitorId, memberId, personType, membershipStatus, registrationState, membershipRequestedAt, membershipApprovedAt]
+      properties:
+        id: { type: string }
+        fullName: { type: string }
+        email: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        branchId: { type: ["string", "null"] }
+        visitorId: { type: ["string", "null"] }
+        memberId: { type: ["string", "null"] }
+        personType: { type: string }
+        membershipStatus: { type: string }
+        registrationState: { type: string, enum: [visitor, requested, member] }
+        membershipRequestedAt: { type: ["string", "null"], format: date-time }
+        membershipApprovedAt: { type: ["string", "null"], format: date-time }
+    VisitorRegistrationRequest:
+      type: object
+      required: [fullName]
+      properties:
+        fullName: { type: string, minLength: 2, maxLength: 140 }
+        phone: { type: string, maxLength: 60 }
     HealthStatus:
       type: object
       properties:
