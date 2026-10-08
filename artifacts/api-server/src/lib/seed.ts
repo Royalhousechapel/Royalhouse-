@@ -5,9 +5,10 @@ import {
   db,
   workflowOptionsTable,
 } from "@workspace/db";
+import { and, eq } from "drizzle-orm";
 
 const seedBranches = [
-  ["International Headquarters (Ahenfie)", "Ghana", "Greater Accra Region", "Accra", "Oil Dome · Ring Road West · Accra, Ghana", "Headquarters leadership", 5.56, -0.2, true],
+  ["International Headquarters (Ahenfie)", "Ghana", "Greater Accra Region", "Accra", "Oil Dome · Ring Road West · Accra, Ghana", "Apostle General Sam Korankye Ankrah", 5.56, -0.2, true],
   ["Royalhouse Chapel Connecticut", "United States", "Connecticut", "Connecticut", "Official branch address managed by Headquarters", "Branch leadership profile coming soon", 41.6, -72.7, false],
   ["Royalhouse Chapel Maryland", "United States", "Maryland", "Maryland", "Grace2Grace Center", "Branch leadership profile coming soon", 39.05, -76.64, false],
   ["Royalhouse Chapel Massachusetts", "United States", "Massachusetts", "Massachusetts", "Mt. Zion Center", "Branch leadership profile coming soon", 42.36, -71.06, false],
@@ -19,6 +20,15 @@ export async function seedRoyalhouseBranches(): Promise<void> {
   await db.insert(branchesTable).values(seedBranches.map(([name, country, region, city, address, pastor, latitude, longitude, featured]) => ({
     name, country, region, city, address, pastor, latitude, longitude, featured,
   }))).onConflictDoNothing({ target: branchesTable.name });
+  // Correct only the original placeholder; preserve any administrator-edited pastor.
+  // Leadership source: https://royalhousechapel.org/
+  await db.update(branchesTable).set({
+    pastor: seedBranches[0][5],
+    updatedAt: new Date(),
+  }).where(and(
+    eq(branchesTable.name, seedBranches[0][0]),
+    eq(branchesTable.pastor, "Headquarters leadership"),
+  ));
 }
 
 const seedWorkflowOptions = [

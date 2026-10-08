@@ -4,3 +4,5 @@
 - [Expo browser history](expo-browser-history.md) — use distinct Stack routes for screens that must support browser Back; tab query changes can replace history.
 - [Worldwide branch coverage](worldwide-branch-coverage.md) — include London and the whole published Royalhouse network, not just the original seed locations.
 - [Admin dashboard scope](admin-dashboard-scope.md) — only enable role modules backed by real shared records and server-enforced actions; otherwise use the department task queue.
+- [Git provider verification](git-provider-verification.md) — healthy integration metadata and public repository reads do not prove authenticated push access.
+- [Post-merge port conflicts](post-merge-port-conflicts.md) — reconciliation can leave old artifact servers occupying ports after workflows restart.
