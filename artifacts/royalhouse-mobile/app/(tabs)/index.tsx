@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import {
+  ActivityIndicator,
   Image,
   ImageBackground,
   Linking,
@@ -18,6 +19,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { Alert } from '@/utils/alert';
 import { AdminUsersRolesWorkspace } from '@/components/admin/AdminUsersRolesWorkspace';
+import { MediaPlayerModal } from '@/components/media/MediaPlayerModal';
+import { liveMedia, sermonData } from '@/data/sermons';
+import type { MediaItem } from '@/data/sermons';
 import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -47,12 +51,6 @@ type ScreenName = 'home' | 'sermons' | 'give' | 'events' | 'profile' | 'prayer' 
 
 const logo = require('../../assets/images/royalhouse-mark.png');
 const worshipBackground = require('../../assets/images/worship-bg.jpg');
-
-const sermonData = [
-  { title: 'The Sound of the King', speaker: 'Apostle General', series: 'Kingdom Culture', duration: '48 min', color: '#17275B' },
-  { title: 'Built For More', speaker: 'Pastor Lydia O.', series: 'Faith That Moves', duration: '36 min', color: '#6C5321' },
-  { title: 'The Place of Prayer', speaker: 'Rev. Daniel K.', series: 'Encounter', duration: '42 min', color: '#253C58' },
-];
 
 const eventData = [
   { month: 'AUG', day: '16', title: 'Global Worship Service', detail: 'Sunday · 9:00 AM WAT', location: 'Victory Center Worldwide' },
@@ -301,7 +299,9 @@ function Header({ onProfile }: { onProfile: () => void }) {
 
 function HomeScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
   const colors = useColors();
+  const [activeMedia, setActiveMedia] = useState<MediaItem | null>(null);
   return (
+    <>
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <Header onProfile={() => navigate('profile')} />
       <View style={styles.greetingRow}>
@@ -319,11 +319,11 @@ function HomeScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
       <ImageBackground source={worshipBackground} imageStyle={styles.heroImage} style={styles.heroCard}>
         <View style={styles.heroOverlay} />
         <View style={styles.heroContent}>
-          <View style={styles.liveBadge}><View style={styles.liveDot} /><Text style={styles.liveText}>LIVE THIS SUNDAY</Text></View>
+          <View style={styles.liveBadge}><View style={styles.liveDot} /><Text style={styles.liveText}>OFFICIAL LIVE STREAM</Text></View>
           <Text style={styles.heroTitle}>There is a place for you in the house.</Text>
           <Text style={styles.heroBody}>Join a global family learning to live, love, and lead like Jesus.</Text>
           <View style={styles.heroActions}>
-            <ActionButton label="Watch live" icon="play" variant="gold" onPress={() => Alert.alert('Live service preview', 'Live streaming has not been connected yet. The scheduled service time is Sunday at 9:00 AM WAT.')} />
+            <ActionButton label="Watch live" icon="play" variant="gold" onPress={() => setActiveMedia(liveMedia)} />
             <ActionButton label="Plan a visit" icon="location-outline" variant="ghost" onPress={() => navigate('branches')} />
           </View>
         </View>
@@ -348,8 +348,8 @@ function HomeScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
 
       <SectionHeader title="Continue listening" action="View all" onPress={() => navigate('sermons')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalList}>
-        {sermonData.map((sermon, index) => (
-          <Pressable key={sermon.title} onPress={() => navigate('sermons')} style={({ pressed }) => [styles.sermonCard, pressed && styles.pressed]}>
+        {sermonData.filter((sermon) => sermon.format === 'audio').map((sermon, index) => (
+          <Pressable key={sermon.id} onPress={() => setActiveMedia(sermon)} style={({ pressed }) => [styles.sermonCard, pressed && styles.pressed]}>
             <View style={[styles.sermonArtwork, { backgroundColor: sermon.color }]}>
               <View style={styles.artworkLines} />
               <Text style={styles.artworkNumber}>0{index + 1}</Text>
@@ -377,6 +377,8 @@ function HomeScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
       </ScrollView>
       <View style={styles.bottomSpacer} />
     </ScrollView>
+    <MediaPlayerModal media={activeMedia} onClose={() => setActiveMedia(null)} />
+    </>
   );
 }
 
@@ -395,15 +397,53 @@ function QuickAction({ label, icon, onPress, material = false }: { label: string
 export function SermonsScreen({ navigate }: { navigate: (screen: ScreenName) => void }) {
   const colors = useColors();
   const [saved, setSaved] = useState<string[]>([]);
+  const [savedLoaded, setSavedLoaded] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('All');
-  // Current messages offer both video and audio; Saved restricts the collection.
+  const [activeMedia, setActiveMedia] = useState<MediaItem | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    AsyncStorage.getItem('royalhouse-saved-sermons')
+      .then((stored) => {
+        if (!mounted || !stored) return;
+        const parsed: unknown = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.every((id) => typeof id === 'string')) {
+          setSaved(parsed);
+        }
+      })
+      .catch(() => {
+        if (mounted) Alert.alert('Saved messages unavailable', 'Saved sermons could not be loaded from this device.');
+      })
+      .finally(() => {
+        if (mounted) setSavedLoaded(true);
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  const availableFilters = useMemo(() => [
+    'All',
+    ...Array.from(new Set(sermonData.map((item) => item.format))).map((format) =>
+      format === 'audio' ? 'Audio' : 'Video'
+    ),
+    'Saved',
+  ], []);
   const filtered = useMemo(() => sermonData.filter((item) =>
     `${item.title} ${item.speaker} ${item.series}`.toLowerCase().includes(query.toLowerCase())
-    && (filter !== 'Saved' || saved.includes(item.title))
+    && (filter === 'All' || (filter === 'Saved' ? saved.includes(item.id) : item.format === filter.toLowerCase()))
   ), [query, filter, saved]);
-  const toggleSave = (title: string) => setSaved((items) => items.includes(title) ? items.filter((item) => item !== title) : [...items, title]);
+  const toggleSave = async (id: string) => {
+    if (!savedLoaded) return;
+    const nextSaved = saved.includes(id) ? saved.filter((item) => item !== id) : [...saved, id];
+    setSaved(nextSaved);
+    try {
+      await AsyncStorage.setItem('royalhouse-saved-sermons', JSON.stringify(nextSaved));
+    } catch {
+      setSaved(saved);
+      Alert.alert('Could not save message', 'This sermon could not be saved on this device. Please try again.');
+    }
+  };
   return (
+    <>
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <SimplePageHeader eyebrow="THE WORD" title="Listen & grow" subtitle="Messages for wherever you are in your walk." />
       <View style={[styles.searchBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -411,19 +451,24 @@ export function SermonsScreen({ navigate }: { navigate: (screen: ScreenName) => 
         <TextInput value={query} onChangeText={setQuery} placeholder="Search sermons, speakers, topics" placeholderTextColor={colors.mutedForeground} style={[styles.searchInput, { color: colors.foreground }]} />
       </View>
       <View style={styles.filterRow}>
-        {['All', 'Video', 'Audio', 'Saved'].map((item) => <Pressable key={item} testID={`sermon-filter-${item.toLowerCase()}`} onPress={() => setFilter(item)} style={[styles.filterChip, { backgroundColor: filter === item ? colors.primary : colors.card, borderColor: colors.border }]}><Text style={[styles.filterText, { color: filter === item ? '#FFFFFF' : colors.foreground }]}>{item}</Text></Pressable>)}
+        {availableFilters.map((item) => <Pressable key={item} testID={`sermon-filter-${item.toLowerCase()}`} onPress={() => setFilter(item)} style={[styles.filterChip, { backgroundColor: filter === item ? colors.primary : colors.card, borderColor: colors.border }]}><Text style={[styles.filterText, { color: filter === item ? '#FFFFFF' : colors.foreground }]}>{item}</Text></Pressable>)}
       </View>
-      <SectionHeader title="Featured messages" />
+      <SectionHeader title={filter === 'Saved' ? 'Saved messages' : filter === 'All' ? 'Featured messages' : `${filter} messages`} />
+      {filter === 'Saved' && !savedLoaded ? (
+        <View style={styles.mediaLoading}><ActivityIndicator color={colors.accent} /><Text style={[styles.listMeta, { color: colors.mutedForeground }]}>Loading saved messages…</Text></View>
+      ) : null}
       {filtered.map((sermon, index) => (
-        <Pressable key={sermon.title} onPress={() => Alert.alert('Sermon preview', `${sermon.title}\nMedia playback has not been connected yet.`)} style={({ pressed }) => [styles.sermonListCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}>
+        <Pressable key={sermon.id} onPress={() => setActiveMedia(sermon)} style={({ pressed }) => [styles.sermonListCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}>
           <View style={[styles.listArtwork, { backgroundColor: sermon.color }]}><Text style={styles.artworkNumber}>0{index + 1}</Text><Ionicons name="play" size={16} color="#FFFFFF" /></View>
-          <View style={styles.listCopy}><Text style={[styles.listTitle, { color: colors.foreground }]}>{sermon.title}</Text><Text style={[styles.listMeta, { color: colors.mutedForeground }]}>{sermon.series} · {sermon.speaker}</Text><Text style={[styles.listDuration, { color: colors.mutedForeground }]}>{sermon.duration}  ·  Video & audio</Text></View>
-          <Pressable accessibilityLabel={`Save ${sermon.title}`} onPress={(event) => { event.stopPropagation(); toggleSave(sermon.title); }} hitSlop={12}><Ionicons name={saved.includes(sermon.title) ? 'bookmark' : 'bookmark-outline'} size={20} color={saved.includes(sermon.title) ? colors.accent : colors.mutedForeground} /></Pressable>
+          <View style={styles.listCopy}><Text style={[styles.listTitle, { color: colors.foreground }]}>{sermon.title}</Text><Text style={[styles.listMeta, { color: colors.mutedForeground }]}>{sermon.series} · {sermon.speaker}</Text><Text style={[styles.listDuration, { color: colors.mutedForeground }]}>{sermon.duration}  ·  {sermon.format.toUpperCase()} · {sermon.provider}</Text></View>
+          <Pressable accessibilityRole="button" accessibilityLabel={`${saved.includes(sermon.id) ? 'Remove saved' : 'Save'} ${sermon.title}`} disabled={!savedLoaded} onPress={(event) => { event.stopPropagation(); void toggleSave(sermon.id); }} hitSlop={12}><Ionicons name={saved.includes(sermon.id) ? 'bookmark' : 'bookmark-outline'} size={20} color={saved.includes(sermon.id) ? colors.accent : colors.mutedForeground} /></Pressable>
         </Pressable>
       ))}
-      {filtered.length === 0 ? <EmptyState icon="search-outline" title="No messages found" body="Try another speaker, topic, or series." /> : null}
+      {filtered.length === 0 && !(filter === 'Saved' && !savedLoaded) ? <EmptyState icon="search-outline" title={filter === 'Saved' ? 'No saved messages yet' : 'No messages found'} body={filter === 'Saved' ? 'Bookmark a sermon to keep it here on this device.' : 'Try another speaker, topic, or series.'} /> : null}
       <View style={styles.bottomSpacer} />
     </ScrollView>
+    <MediaPlayerModal media={activeMedia} onClose={() => setActiveMedia(null)} />
+    </>
   );
 }
 
@@ -1057,6 +1102,7 @@ const styles = StyleSheet.create({
   listTitle: { fontSize: 14, fontWeight: '700' },
   listMeta: { fontSize: 11, marginTop: 4 },
   listDuration: { fontSize: 10, marginTop: 5 },
+  mediaLoading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 20 },
   emptyState: { margin: 16, padding: 30, alignItems: 'center', borderWidth: 1, borderRadius: 14 },
   emptyTitle: { marginTop: 10, fontSize: 15, fontWeight: '700' },
   emptyBody: { marginTop: 5, fontSize: 12, textAlign: 'center' },
